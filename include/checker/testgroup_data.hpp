@@ -8,12 +8,12 @@
 class testgroup_data {
 public:
     testgroup_data(
-        std::string testgroup_name,
+        std::string testgroupname,
         std::vector<test_data> tests = std::vector<test_data>()
     ):
-        testgroup_name(testgroup_name), 
+        testgroupname(testgroupname), 
         tests(tests){};
-    std::string testgroup_name;
+    std::string testgroupname;
     std::vector<test_data> tests;
 };
 #endif

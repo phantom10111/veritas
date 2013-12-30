@@ -10,5 +10,8 @@ public:
     void update_test(std::string testid);
 private:
     void write_to_file(std::string filename, pqxx::binarystring str);
+    pqxx::result select_submission(std::string submissionid);
+    pqxx::result select_option(std::string variantid, std::string extension);
+    pqxx::result select_tests(std::string variantid);
 };
 #endif

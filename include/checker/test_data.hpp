@@ -5,22 +5,22 @@ class test_data {
 public:
     test_data(
         std::string testid,
-        std::string test_name,
-        std::string input_file_name,
-        std::string output_file_name,
+        std::string testname,
+        std::string infilename,
+        std::string outfilename,
         std::string timelimit,
         std::string memlimit
     ):
         testid(testid), 
-        test_name(test_name), 
-        input_file_name(input_file_name),
-        output_file_name(output_file_name),
+        testname(testname), 
+        infilename(infilename),
+        outfilename(outfilename),
         timelimit(timelimit),
         memlimit(memlimit){};
     std::string testid;
-    std::string test_name;
-    std::string input_file_name;
-    std::string output_file_name;
+    std::string testname;
+    std::string infilename;
+    std::string outfilename;
     std::string timelimit;
     std::string memlimit;
 };
