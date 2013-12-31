@@ -9,7 +9,9 @@
 submission_data resource_manager::get_submission_data(
     std::string submissionid
 ){
-    auto submission = select_submission(submissionid);
+    pqxx::connection conn(DB_CONN_INFO);
+    
+    auto submission = select_submission(conn, submissionid);
     
     if(submission.empty())
         return submission_data(submission_data::NO_SUCH_SUBMISSION);
@@ -19,7 +21,7 @@ submission_data resource_manager::get_submission_data(
                 extension = row["extension"].as<std::string>();
     
     
-    pqxx::result option = select_option(variantid, extension);
+    pqxx::result option = select_option(conn, variantid, extension);
     
     if(option.empty())
         return submission_data(submission_data::NO_SUCH_EXTENSION);
@@ -37,7 +39,7 @@ submission_data resource_manager::get_submission_data(
     
     
     
-    pqxx::result tests = select_tests(variantid);
+    pqxx::result tests = select_tests(conn, variantid);
     std::vector<testgroup_data> testgroup_vector;
     
     for(row = tests.begin(); row != tests.end(); row++){
@@ -78,9 +80,9 @@ void resource_manager::write_to_file(
 
 
 pqxx::result resource_manager::select_submission(
+    pqxx::connection &conn, 
     std::string submissionid
 ){
-    pqxx::connection conn(DB_CONN_INFO);
     pqxx::work txn(conn);
     std::string query = 
         std::string() + "SELECT variantid, extension \
@@ -89,10 +91,10 @@ pqxx::result resource_manager::select_submission(
     return txn.exec(query);
 }
 pqxx::result resource_manager::select_option(
+    pqxx::connection &conn, 
     std::string variantid, 
     std::string extension
 ){
-    pqxx::connection conn(DB_CONN_INFO);
     pqxx::work txn(conn);
     std::string query = 
         std::string() + "SELECT running_optionid, compile_script, run_script \
@@ -103,8 +105,9 @@ pqxx::result resource_manager::select_option(
     return txn.exec(query);
     
 }
-pqxx::result resource_manager::select_tests(std::string variantid){
-    pqxx::connection conn(DB_CONN_INFO);
+pqxx::result resource_manager::select_tests(
+    pqxx::connection &conn,     
+    std::string variantid){
     pqxx::work txn(conn);
     std::string query = 
         std::string() + "SELECT testgroupname, testid, testname, \
