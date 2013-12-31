@@ -13,5 +13,5 @@ test_result checker::test_solution(
     std::string const &solution_filename,
     std::string const &run_script_filename, 
     test_data const &test){
-    return test_result(submissionid, test.testid, "OK", "0.00");
+    return test_result(submissionid, "OK", test.testid, "0.00");
 }

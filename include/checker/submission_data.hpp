@@ -12,19 +12,19 @@ public:
     } result;
     submission_data(
         get_data_result result,
-        std::string solution_filename = "" ,
+        std::string solution_filename = "",
         std::string compile_script_filename = "",
         std::string run_script_filename = "",
-        std::vector<testgroup_data> testgroups = std::vector<testgroup_data>()
+        std::string variantid = ""
     ):
         solution_filename(solution_filename),
         compile_script_filename(compile_script_filename),
         run_script_filename(run_script_filename),
-        testgroups(testgroups),
-        result(result){};
+        result(result),
+        variantid(variantid){};
     std::string solution_filename;
     std::string compile_script_filename;
     std::string run_script_filename;
-    std::vector<testgroup_data> testgroups;
+    std::string variantid;
 };
 #endif

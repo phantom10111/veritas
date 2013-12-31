@@ -3,9 +3,11 @@
 #include "submission_data.hpp"
 #include "test_result.hpp"
 #include <pqxx/pqxx>
+#include <vector>
 class resource_manager {
 public:
     submission_data get_submission_data(std::string submissionid);
+    std::vector<testgroup_data> get_tests(std::string submissionid);
     void add_test_result(test_result result);
     void update_test(std::string testid);
 private:

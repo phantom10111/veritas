@@ -47,11 +47,19 @@ submission_data resource_manager::get_submission_data(
     std::string solution_filename = submissionid + "." + extension;
     
     write_to_file(solution_filename, solution_file);
+        
+    return submission_data(submission_data::OK, solution_filename, 
+                compile_script_filename, run_script_filename, variantid);
+}
+
+std::vector<testgroup_data> resource_manager::get_tests(std::string variantid){
+    
+    pqxx::connection conn(DB_CONN_INFO);
     
     pqxx::result tests = select_tests(conn, variantid);
     std::vector<testgroup_data> testgroup_vector;
     
-    for(row = tests.begin(); row != tests.end(); row++){
+    for(auto row = tests.begin(); row != tests.end(); row++){
         std::string testgroupname = row["testgroupname"].as<std::string>(),
                     testid        = row["testid"].as<std::string>(),
                     testname      = row["testname"].as<std::string>(),
@@ -71,11 +79,11 @@ submission_data resource_manager::get_submission_data(
         testgroup_vector.back().tests.emplace_back(testid, testname, 
             infilename, outfilename, timelimit, memlimit);
     }
-        
-    return submission_data(submission_data::OK, solution_filename, 
-                compile_script_filename, run_script_filename, testgroup_vector);
+    return testgroup_vector;
 }
-
+void resource_manager::add_test_result(test_result result){
+    //TODO sending result to db
+}
 
 void resource_manager::write_to_file(
     std::string filename, 

@@ -4,9 +4,9 @@ class test_result {
 public:
     test_result(
         std::string submissionid, 
-        std::string testid, 
         std::string status, 
-        std::string time
+        std::string testid, 
+        std::string time = "0"
     ):
         submissionid(submissionid), 
         testid(testid), 
