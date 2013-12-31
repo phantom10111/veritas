@@ -31,13 +31,22 @@ submission_data resource_manager::get_submission_data(
     pqxx::binarystring compile_script(row["compile_script"]),
                        run_script    (row["run_script"]);
                        
-    std::string compile_script_name = std::string("compile") + running_optionid;
-    std::string run_script_name = std::string("run") + running_optionid;
+    std::string compile_script_filename = std::string("compile") + running_optionid;
+    std::string run_script_filename = std::string("run") + running_optionid;
     
-    write_to_file(compile_script_name, compile_script);
-    write_to_file(run_script_name, run_script);
+    write_to_file(compile_script_filename, compile_script);
+    write_to_file(run_script_filename, run_script);
     
+    auto solution = select_solution(conn, submissionid);
     
+    if(solution.empty())
+        return submission_data(submission_data::NO_SUCH_SUBMISSION);
+    
+    row = solution.begin(); 
+    pqxx::binarystring solution_file(row["file"]);
+    std::string solution_filename = submissionid + "." + extension;
+    
+    write_to_file(solution_filename, solution_file);
     
     pqxx::result tests = select_tests(conn, variantid);
     std::vector<testgroup_data> testgroup_vector;
@@ -63,8 +72,8 @@ submission_data resource_manager::get_submission_data(
             infilename, outfilename, timelimit, memlimit);
     }
         
-    return submission_data(submission_data::OK, compile_script_name, 
-                run_script_name, testgroup_vector);
+    return submission_data(submission_data::OK, solution_filename, 
+                compile_script_filename, run_script_filename, testgroup_vector);
 }
 
 
@@ -120,4 +129,14 @@ pqxx::result resource_manager::select_tests(
                        ORDER BY testgroupname;";
     return txn.exec(query);
 
+}
+pqxx::result resource_manager::select_solution(pqxx::connection &conn, 
+                                std::string submissionid){
+    
+    pqxx::work txn(conn);
+    std::string query = 
+        std::string() + "SELECT file\
+                           FROM submissions \
+                          WHERE submissionid = "+ submissionid +";";
+    return txn.exec(query);
 }

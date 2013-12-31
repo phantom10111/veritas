@@ -5,16 +5,16 @@ public:
     test_result(
         std::string submissionid, 
         std::string testid, 
-        std::string statusid, 
+        std::string status, 
         std::string time
     ):
         submissionid(submissionid), 
         testid(testid), 
-        statusid(statusid), 
+        status(status), 
         time(time){};
     std::string submissionid;
     std::string testid;
-    std::string statusid;
+    std::string status;
     std::string time;
 };
 #endif

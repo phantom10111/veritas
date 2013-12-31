@@ -15,5 +15,7 @@ private:
     pqxx::result select_option(pqxx::connection &conn, 
                         std::string variantid, std::string extension);
     pqxx::result select_tests(pqxx::connection &conn, std::string variantid);
+    pqxx::result select_solution(pqxx::connection &conn, 
+                                    std::string submissionid);
 };
 #endif
