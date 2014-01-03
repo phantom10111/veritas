@@ -1,12 +1,3 @@
-export
-
-PWD := $(shell pwd)
-
-override CXXFLAGS += -std=gnu++11 -I$(PWD)/include -O2
-override LDLIBS += -lboost_system -lpqxx
-RM = rm -rf
-GENCLEAN := *.o
-
 all: checker client webserver
 
 checker:

@@ -1,3 +1,6 @@
+ROOT := ../..
+include $(ROOT)/*.mk
+
 all: client
 
 client:
