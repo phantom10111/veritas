@@ -6,6 +6,6 @@ all: webserver
 webserver: webserver.o
 
 clean:
-	$(RM) $(GENCLEAN) webserver
+	$(RMALL) webserver
 
 .PHONY: all clean

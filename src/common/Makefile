@@ -2,6 +2,6 @@ ROOT := ../..
 include $(ROOT)/*.mk
 
 clean:
-	$(RM) $(GENCLEAN)
+	$(RMALL)
 
 .PHONY: clean
