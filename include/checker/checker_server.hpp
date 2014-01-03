@@ -1,7 +1,7 @@
 #ifndef CHECKER_SERVER_HPP
 #define CHECKER_SERVER_HPP
-#include "checker.hpp"
-#include "resource_manager.hpp"
+#include "checker/checker.hpp"
+#include "checker/resource_manager.hpp"
 #include <queue>
 #include <boost/asio/io_service.hpp>
 #include <boost/asio/io_service.hpp>

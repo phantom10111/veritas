@@ -1,7 +1,7 @@
 #ifndef CHECKER_HPP
 #define CHECKER_HPP
-#include "submission_data.hpp"
-#include "test_result.hpp"
+#include "checker/submission_data.hpp"
+#include "checker/test_result.hpp"
 class checker {
 public:
     int compile(

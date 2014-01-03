@@ -1,5 +1,5 @@
-#include "resource_manager.hpp"
-#include "config.hpp"
+#include "checker/resource_manager.hpp"
+#include "common/config.hpp"
 #include <pqxx/pqxx> 
 #include <pqxx/binarystring>
 #include <string>

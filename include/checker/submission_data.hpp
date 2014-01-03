@@ -2,7 +2,7 @@
 #define SUBMISSION_DATA_HPP
 #include <vector>
 #include <string>
-#include "testgroup_data.hpp"
+#include "checker/testgroup_data.hpp"
 class submission_data{
 public:
     enum get_data_result{

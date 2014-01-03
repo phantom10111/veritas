@@ -1,7 +1,7 @@
 #ifndef RESOURCE_MANAGER_HPP
 #define RESOURCE_MANAGER_HPP
-#include "submission_data.hpp"
-#include "test_result.hpp"
+#include "checker/submission_data.hpp"
+#include "checker/test_result.hpp"
 #include <pqxx/pqxx>
 #include <vector>
 class resource_manager {

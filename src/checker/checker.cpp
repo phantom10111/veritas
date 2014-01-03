@@ -1,5 +1,5 @@
 
-#include "checker.hpp"
+#include "checker/checker.hpp"
 
 int checker::compile(
     std::string const &compile_script_filename, 

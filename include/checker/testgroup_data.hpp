@@ -3,7 +3,7 @@
 #include <vector>
 #include <string>
 
-#include "test_data.hpp"
+#include "checker/test_data.hpp"
 
 class testgroup_data {
 public:

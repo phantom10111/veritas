@@ -4,7 +4,7 @@
 #include<string>
 #include<vector>
 
-const char* DB_CONN_INFO = "dbname=veritas";
+extern const char* DB_CONN_INFO;
 
 typedef const char*        Host;
 typedef unsigned short int Port;
