@@ -2,4 +2,7 @@ all: client
 
 client:
 
-.PHONY: all
+clean:
+	$(RM) $(GENCLEAN) client
+
+.PHONY: all clean
