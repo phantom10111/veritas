@@ -3,4 +3,5 @@
 
 src/checker/checker
 src/webserver/webserver
-include/common/config.h
+include/common/config.hpp
+
