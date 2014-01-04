@@ -19,7 +19,7 @@ ifneq ($(TRACK_DEPENDENCIES), 0)
 
 override COMPILE_OPTIONS += -MD
 
-%.d:
+%.d: ;
 
 .PHONY: %.d
 

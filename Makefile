@@ -1,6 +1,3 @@
-ROOT := .
-include $(ROOT)/*.mk
-
 all: checker client webserver
 
 checker:
