@@ -23,11 +23,13 @@ void webserver::server_thread(std::iostream *stream){
     std::string login, pass;
     pqxx::connection conn(DB_CONN_INFO);
     getline(getline(*stream, login), pass);
-    
+    //dropping CRs and LFs
+    login.erase(login.find_last_not_of("\n\r\t")+1);
+    pass.erase(pass.find_last_not_of("\n\r\t")+1);
     std::string query = 
-        std::string() + "SELECT * \
-                           FROM users \
-                          WHERE login = '"+ login +"';";
+        std::string() + "SELECT *     \n"
+                        "  FROM users \n"
+                        " WHERE login = '"+ login + "';\n";
     pqxx::work txn(conn);
     pqxx::result user = txn.exec(query);
     if(user.empty()){
@@ -36,5 +38,12 @@ void webserver::server_thread(std::iostream *stream){
         return;
     }
     std::string userid = user.begin()["userid"].as<std::string>();
+    std::string authtoken = user.begin()["authtoken"].as<std::string>();
+    if(pass !=authtoken){
+        *stream << "ERROR WRONGPASS\n";
+        delete stream;
+        return;
+    }
+    *stream << "OK";
     delete stream;
 }
