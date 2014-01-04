@@ -1,6 +1,6 @@
 CXXFLAGS := -O2
 COMPILE_OPTIONS := -std=gnu++11 -I$(ROOT)/include -MMD
-override LDLIBS += -lboost_system -lpqxx
+LINK_OPTIONS := -lboost_system -lpqxx
 
 RM := rm -rf
 GENCLEAN := *.o *.d
@@ -12,7 +12,7 @@ RMALL = $(RM) $(GENCLEAN)
 	$(COMPILE.cpp) $(COMPILE_OPTIONS) $(OUTPUT_OPTION) $<
 
 %:
-	$(LINK.cpp) $^ $(LOADLIBES) $(LDLIBS) -o $@
+	$(LINK.cpp) $^ $(LOADLIBES) $(LDLIBS) $(LINK_OPTIONS) -o $@
 
 %.d:
 
