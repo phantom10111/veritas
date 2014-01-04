@@ -1,7 +1,9 @@
 ROOT := ../..
 include $(ROOT)/*.mk
 
+all:
+
 clean:
 	$(RMALL)
 
-.PHONY: clean
+.PHONY: all clean
