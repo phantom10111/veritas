@@ -19,4 +19,4 @@ clean:
 	cd src/webserver && $(MAKE) clean
 	$(RM) checker client webserver
 
-.PHONY: all clean
+.PHONY: all checker client webserver clean

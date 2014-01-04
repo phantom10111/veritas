@@ -17,7 +17,14 @@ RMALL = $(RM) *.o *.d
 
 ifneq ($(TRACK_DEPENDENCIES), 0)
 
+TRACK_SYSTEM_DEPENDENCIES := 0
+ifeq ($(TRACK_SYSTEM_DEPENDENCIES), 0)
+override COMPILE_OPTIONS += -MMD
+else
 override COMPILE_OPTIONS += -MD
+endif
+
+override COMPILE_OPTIONS += -MP
 
 %.d: ;
 
