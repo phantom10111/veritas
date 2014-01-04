@@ -9,7 +9,7 @@ public:
     void run(int port);
     
 private:
-    void server_thread(boost::asio::ip::tcp::iostream *stream);
+    void server_thread(std::iostream *stream);
 };
 
 #endif
