@@ -8,5 +8,3 @@
 src/checker/checker
 src/client/client
 src/webserver/webserver
-include/common/config.hpp
-
