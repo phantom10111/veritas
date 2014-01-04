@@ -2,5 +2,5 @@
 *.d
 
 src/checker/checker
-src/webserver/webserver_main
+src/webserver/webserver
 include/common/config.h

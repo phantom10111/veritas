@@ -1,11 +1,11 @@
 ROOT := ../..
 include $(ROOT)/*.mk
 
-all: webserver_main
+all: webserver
 
-webserver_main: webserver_main.o webserver.o ../common/config.o
+webserver: main.o webserver.o ../common/config.o
 
 clean:
-	$(RMALL) webserver_main
+	$(RMALL) webserver
 
 .PHONY: all clean
