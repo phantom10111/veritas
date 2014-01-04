@@ -3,7 +3,7 @@ include $(ROOT)/*.mk
 
 all: client
 
-client:
+client: main.o
 
 clean:
 	$(RMALL) client
