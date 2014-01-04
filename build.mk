@@ -1,10 +1,10 @@
 CXXFLAGS := -O2
-COMPILE_OPTIONS := -std=gnu++11 -I$(ROOT)/include -MMD
-LINK_OPTIONS := -lboost_system -lpqxx
 
-RM := rm -rf
-GENCLEAN := *.o *.d
-RMALL = $(RM) $(GENCLEAN)
+override COMPILE_OPTIONS := -std=gnu++11 -I$(ROOT)/include
+override LINK_OPTIONS := -lboost_system -lpqxx
+
+RMALL = $(RM) *.o *.d
+
 
 .DEFAULT_GOAL := all
 
@@ -12,10 +12,17 @@ RMALL = $(RM) $(GENCLEAN)
 	$(COMPILE.cpp) $(COMPILE_OPTIONS) $(OUTPUT_OPTION) $<
 
 %:
-	$(LINK.cpp) $^ $(LOADLIBES) $(LDLIBS) $(LINK_OPTIONS) -o $@
+	$(LINK.cpp) $^ $(LOADLIBES) $(LDLIBS) $(LINK_OPTIONS) $(OUTPUT_OPTION)
+
+
+ifneq ($(TRACK_DEPENDENCIES), 0)
+
+override COMPILE_OPTIONS += -MD
 
 %.d:
 
 .PHONY: %.d
 
 -include *.d ../common/*.d
+
+endif
