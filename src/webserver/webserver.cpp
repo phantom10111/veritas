@@ -17,6 +17,9 @@ void webserver::run(int port){
     ctx.set_options(boost::asio::ssl::context::default_workarounds
         | boost::asio::ssl::context::no_sslv2);
     ctx.set_verify_mode(boost::asio::ssl::verify_none);
+    ctx.use_private_key_file(privkeyfile, boost::asio::ssl::context::pem);
+    ctx.use_certificate_chain_file(certfile);
+    ctx.use_tmp_dh_file(dhfile);
     while(true){
         boost::asio::ssl::stream<boost::asio::ip::tcp::socket> *stream = 
             new boost::asio::ssl::stream<boost::asio::ip::tcp::socket>(ios, ctx);
@@ -26,9 +29,9 @@ void webserver::run(int port){
 }
     
 void webserver::server_thread(boost::asio::ssl::stream<boost::asio::ip::tcp::socket> *stream){
+    ssl_socket socket(stream, boost::asio::ssl::stream<boost::asio::ip::tcp::socket>::server);
     std::string login, pass;
     pqxx::connection conn(DB_CONN_INFO);
-    ssl_socket socket(stream, boost::asio::ssl::stream<boost::asio::ip::tcp::socket>::server);
     socket.getline(login).getline(pass);
     //dropping CRs and LFs
     login.erase(login.find_last_not_of("\n\r\t")+1);

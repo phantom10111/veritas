@@ -5,6 +5,9 @@
 #include<vector>
 
 extern const char* DB_CONN_INFO;
+extern const char* privkeyfile;
+extern const char* certfile;
+extern const char* dhfile;
 
 typedef const char*        Host;
 typedef unsigned short int Port;

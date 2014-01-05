@@ -3,7 +3,7 @@ include $(ROOT)/*.mk
 
 all: client
 
-client: main.o ../common/ssl_socket.o
+client: main.o ../common/config.o ../common/ssl_socket.o
 
 clean:
 	$(RMALL) client

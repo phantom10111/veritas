@@ -11,7 +11,8 @@ int main(){
 	boost::asio::ssl::context ctx(boost::asio::ssl::context::tlsv1_client);
 	ctx.set_options(boost::asio::ssl::context::default_workarounds
 		| boost::asio::ssl::context::no_sslv2);
-	ctx.set_verify_mode(boost::asio::ssl::verify_none);
+	ctx.set_verify_mode(boost::asio::ssl::verify_peer);
+	ctx.load_verify_file(certfile);
 
 	boost::asio::ssl::stream<boost::asio::ip::tcp::socket> *stream = new boost::asio::ssl::stream<boost::asio::ip::tcp::socket>(ios, ctx);
 	stream->lowest_layer().connect(endpoint);

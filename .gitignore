@@ -5,6 +5,10 @@
 /client
 /webserver
 
+/privkey.pem
+/server.pem
+/dh512.pem
+
 src/checker/checker
 src/client/client
 src/webserver/webserver
