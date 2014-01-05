@@ -9,7 +9,9 @@ extern const char* DB_CONN_INFO;
 typedef const char*        Host;
 typedef unsigned short int Port;
 
-const Port checker_port = 4711;
+extern const int n_checkers;
+extern const Host checker_hosts[];
+extern const Port checker_ports[];
 
 
 #endif
