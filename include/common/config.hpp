@@ -13,5 +13,6 @@ extern const int n_checkers;
 extern const Host checker_hosts[];
 extern const Port checker_ports[];
 
+const Port webserver_port = 4712;
 
 #endif
