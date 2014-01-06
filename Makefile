@@ -16,10 +16,10 @@ privkey.pem:
 	openssl genrsa -out privkey.pem 4096
 
 server.pem: privkey.pem
-	openssl req -new -x509 -key privkey.pem -out server.pem -subj / -days 1095
+	openssl req -new -x509 -key privkey.pem -outform PEM -out server.pem -subj / -days 1095
 
 dh512.pem:
-	openssl dhparam -out dh512.pem 512
+	openssl dhparam -outform PEM -out dh512.pem 512
 
 clean:
 	cd src/checker && $(MAKE) clean
