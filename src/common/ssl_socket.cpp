@@ -31,7 +31,7 @@ ssl_socket& ssl_socket::getline(std::string& what)
 			*this >> buf;
 			pos = 0;
 		}
-		str << buf[pos++];
+		str << buf[pos];
 		if(buf[pos++] == '\n')
 			break;
 	}
