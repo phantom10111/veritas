@@ -46,16 +46,22 @@ void webserver::server_thread(ssl::stream<ip::tcp::socket> *stream){
                         "  FROM users \n"
                         " WHERE login = '"+ login + "';\n";
     pqxx::work txn(conn);
-    pqxx::result user = txn.exec(query);
-    if(user.empty()){
+    pqxx::result users = txn.exec(query);
+    if(users.empty()){
         socket.write("ERROR NO SUCH USER");
         return;
     }
-    std::string userid = user.begin()["userid"].as<std::string>();
-    std::string authtoken = user.begin()["authtoken"].as<std::string>();
+    auto user = *users.begin();
+    std::string userid = user["userid"].as<std::string>();
+    std::string authtoken = user["authtoken"].as<std::string>();
     if(pass !=authtoken){
-        socket.write("ERROR WRONGPASS");
+        socket.write("ERROR WRONG PASSWORD");
         return;
     }
-    socket.write("OK");
+    std::string command;
+    socket.read(command);
+    if(handlers.count(command))
+        handlers[command](user, socket, conn);
+    else
+        socket.write("ERROR NO SUCH COMMAND");
 }

@@ -7,7 +7,10 @@
 #include <map>
 
 
-void submit(pqxx::result user, ssl_socket& stream, pqxx::connection &conn){
+void submit(pqxx::result::tuple &user, 
+            ssl_socket& stream, 
+            pqxx::connection &conn){
+    stream.write("OK");
 }
 
 std::map<std::string, command_handler> command_handlers(){
