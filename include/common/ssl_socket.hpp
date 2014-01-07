@@ -11,18 +11,17 @@ public:
 	ssl_socket(boost::asio::ssl::stream<boost::asio::ip::tcp::socket> *, boost::asio::ssl::stream<boost::asio::ip::tcp::socket>::handshake_type);
 	~ssl_socket();
 
-	ssl_socket& operator>>(std::string&);
-
-	template<class T>
-	ssl_socket& operator<<(T& what)
-	{
-		write(*socket, boost::asio::buffer(what, sizeof(what)));
-		return *this;
-	}
-
-	ssl_socket& getline(std::string&);
+    ssl_socket& write(std::string const &what)
+    {
+        boost::asio::write(*socket, boost::asio::buffer(what.c_str(), what.size() + 1));
+        return *this;
+    }
+	ssl_socket& read(std::string&);
+	ssl_socket& writefile(std::string const &);
+	ssl_socket& readfile(std::string const &);
 
 private:
+    static const int BUFFER_SIZE = 128;
 	boost::asio::ssl::stream<boost::asio::ip::tcp::socket> *socket;
 	std::string buf;
 	int pos;

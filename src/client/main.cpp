@@ -18,10 +18,10 @@ int main(){
 	stream->lowest_layer().connect(endpoint);
 	ssl_socket socket(stream, boost::asio::ssl::stream<boost::asio::ip::tcp::socket>::client);
 
-	socket << "login\n";
-	socket << "password\n";
+	socket.write("login");
+	socket.write("password\n");
 	std::string response;
-	socket.getline(response);
+	socket.read(response);
 	std::cout << response;
 	return 0;
 }

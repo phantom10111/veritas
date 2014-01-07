@@ -32,7 +32,7 @@ void webserver::server_thread(boost::asio::ssl::stream<boost::asio::ip::tcp::soc
     ssl_socket socket(stream, boost::asio::ssl::stream<boost::asio::ip::tcp::socket>::server);
     std::string login, pass;
     pqxx::connection conn(DB_CONN_INFO);
-    socket.getline(login).getline(pass);
+    socket.read(login).read(pass);
     //dropping CRs and LFs
     login.erase(login.find_last_not_of("\n\r\t")+1);
     pass.erase(pass.find_last_not_of("\n\r\t")+1);
@@ -43,14 +43,14 @@ void webserver::server_thread(boost::asio::ssl::stream<boost::asio::ip::tcp::soc
     pqxx::work txn(conn);
     pqxx::result user = txn.exec(query);
     if(user.empty()){
-        socket << "ERROR NOSUCHUSER\n";
+        socket.write("ERROR NOSUCHUSER");
         return;
     }
     std::string userid = user.begin()["userid"].as<std::string>();
     std::string authtoken = user.begin()["authtoken"].as<std::string>();
     if(pass !=authtoken){
-        socket << "ERROR WRONGPASS\n";
+        socket.write("ERROR WRONGPASS");
         return;
     }
-    socket << "OK";
+    socket.write("OK");
 }
