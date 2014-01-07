@@ -3,7 +3,7 @@ include $(ROOT)/*.mk
 
 all: webserver
 
-webserver: main.o webserver.o ../common/config.o ../common/ssl_socket.o
+webserver: main.o webserver.o commands.o ../common/config.o ../common/ssl_socket.o
 
 clean:
 	$(RMALL) webserver
