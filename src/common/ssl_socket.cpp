@@ -15,9 +15,14 @@ ssl_socket::~ssl_socket()
 	delete socket;
 }
 
+ssl_socket& ssl_socket::write(std::string const &what)
+{
+    boost::asio::write(*socket, boost::asio::buffer(what.c_str(), what.size() + 1));
+    return *this;
+}
+
 ssl_socket& ssl_socket::read(std::string& what)
 {
-        printf("read\n");
 	char c[1024];
 	std::stringstream str;
 	

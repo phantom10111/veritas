@@ -11,11 +11,7 @@ public:
 	ssl_socket(boost::asio::ssl::stream<boost::asio::ip::tcp::socket> *, boost::asio::ssl::stream<boost::asio::ip::tcp::socket>::handshake_type);
 	~ssl_socket();
 
-    ssl_socket& write(std::string const &what)
-    {
-        boost::asio::write(*socket, boost::asio::buffer(what.c_str(), what.size() + 1));
-        return *this;
-    }
+	ssl_socket& write(std::string const &);
 	ssl_socket& read(std::string&);
 	ssl_socket& writefile(std::string const &);
 	ssl_socket& readfile(std::string const &);
