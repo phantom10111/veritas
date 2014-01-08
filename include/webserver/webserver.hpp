@@ -12,7 +12,7 @@ public:
     
 private:
     void server_thread(boost::asio::ssl::stream<boost::asio::ip::tcp::socket> *stream);
-    pqxx::result::tuple user(std::string login);
+    pqxx::result select_users(pqxx::connection &conn, std::string const &login);
     std::map<std::string, command_handler> handlers = command_handlers();
 };
 

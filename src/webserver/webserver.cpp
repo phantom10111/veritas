@@ -37,16 +37,13 @@ void webserver::server_thread(ssl::stream<ip::tcp::socket> *stream){
     ssl_socket socket(stream, ssl::stream<ip::tcp::socket>::server);
     std::string login, pass;
     pqxx::connection conn(DB_CONN_INFO);
-    socket.read(login).read(pass);
-    //dropping CRs and LFs
-    login.erase(login.find_last_not_of("\n\r\t")+1);
-    pass.erase(pass.find_last_not_of("\n\r\t")+1);
-    std::string query = 
-        std::string() + "SELECT *     \n"
-                        "  FROM users \n"
-                        " WHERE login = '"+ login + "';\n";
-    pqxx::work txn(conn);
-    pqxx::result users = txn.exec(query);
+    try {
+        socket.read(login).read(pass);
+    } catch(...) {
+        socket.write("ERROR READ LOGIN PASSWORD");
+        return;
+    }
+    pqxx::result users = select_users(conn, login);
     if(users.empty()){
         socket.write("ERROR NO SUCH USER");
         return;
@@ -64,4 +61,16 @@ void webserver::server_thread(ssl::stream<ip::tcp::socket> *stream){
         handlers[command](user, socket, conn);
     else
         socket.write("ERROR NO SUCH COMMAND");
+}
+
+pqxx::result webserver::select_users(
+    pqxx::connection &conn, 
+    std::string const &login) {
+    conn.prepare("login", 
+        "SELECT *          "
+        "  FROM users      "
+        " WHERE login = $1;")
+        ("varchar", pqxx::prepare::treat_string);
+    pqxx::work txn(conn);
+    return txn.prepared("login")(login).exec();
 }
