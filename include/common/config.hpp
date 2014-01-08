@@ -18,4 +18,5 @@ extern const Port checker_ports[];
 
 const Port webserver_port = 4712;
 
+const int MAX_SUBMIT_SIZE = 102400; //100kB
 #endif

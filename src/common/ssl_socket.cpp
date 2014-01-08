@@ -44,10 +44,12 @@ ssl_socket& ssl_socket::read(std::string& what)
 	return *this;
 }
 
-ssl_socket& ssl_socket::writefile(std::string const &filename){
+int ssl_socket::writefile(std::string const &filename, int max_size){
     char c[BUFFER_SIZE + 1];
 	std::ifstream filestream(filename.c_str(), std::ios::binary | std::ios::ate);
     int filesize = filestream.tellg();
+    if(filesize > max_size)
+        return 1;
     this->write(std::to_string(filesize));
     filestream.clear();
     filestream.seekg(0, std::ios::beg);
@@ -59,16 +61,18 @@ ssl_socket& ssl_socket::writefile(std::string const &filename){
         this->write(std::string(c, len));
 		filesize -= len;
     }
-    return *this;
+    return 0;
 }
 
-ssl_socket& ssl_socket::readfile(std::string const &filename){
+int ssl_socket::readfile(std::string const &filename, int max_size){
     char c[BUFFER_SIZE + 1];
 	std::ofstream filestream;
     filestream.open(filename.c_str(), std::ios::binary);
     std::string lengthstr;
     this->read(lengthstr);
     int filesize = atoi(lengthstr.c_str());
+    if(filesize > max_size)
+        return 1;
     while(filesize > 0){
 		if(pos >= buf.size())
 		{
@@ -81,6 +85,6 @@ ssl_socket& ssl_socket::readfile(std::string const &filename){
 		pos = buf.size();
 		filesize -= len;
     }
-    return *this;
+    return 0;
 
 }

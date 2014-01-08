@@ -13,8 +13,8 @@ public:
 
 	ssl_socket& write(std::string const &);
 	ssl_socket& read(std::string&);
-	ssl_socket& writefile(std::string const &);
-	ssl_socket& readfile(std::string const &);
+	int writefile(std::string const &, int);
+	int readfile(std::string const &, int);
 
 private:
     static const int BUFFER_SIZE = 128;

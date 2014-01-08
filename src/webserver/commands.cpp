@@ -1,4 +1,5 @@
 
+#include "common/config.hpp"
 #include "common/ssl_socket.hpp"
 #include "webserver/commands.hpp"
 #include <boost/asio/ip/tcp.hpp>
@@ -34,7 +35,9 @@ void submit(pqxx::result::tuple &user,
         shortname + 
         "." + 
         extension;
-    socket.readfile(filename);
+    if(socket.readfile(filename, MAX_SUBMIT_SIZE)){
+        socket.write("ERROR FILE TO LARGE");
+    }
     socket.write("OK");
 }
 
