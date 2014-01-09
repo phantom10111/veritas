@@ -69,8 +69,7 @@ pqxx::result webserver::select_users(
     conn.prepare("login", 
         "SELECT *          "
         "  FROM users      "
-        " WHERE login = $1;")
-        ("varchar", pqxx::prepare::treat_string);
+        " WHERE login = $1;");
     pqxx::work txn(conn);
     return txn.prepared("login")(login).exec();
 }
