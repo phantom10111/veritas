@@ -17,7 +17,8 @@ ssl_socket::~ssl_socket()
 
 ssl_socket& ssl_socket::write(std::string const &what)
 {
-    boost::asio::write(*socket, boost::asio::buffer(what.c_str(), what.size() + 1));
+    boost::asio::write(*socket, boost::asio::buffer(what.c_str(), what.size()));
+    boost::asio::write(*socket, boost::asio::buffer(" ", 1));
     return *this;
 }
 
@@ -36,7 +37,7 @@ ssl_socket& ssl_socket::read(std::string& what)
 			pos = 0;
 		}
 		char c = buf[pos++];
-		if(c == '\0')
+		if(c == ' ')
 			break;
 		str << c;
 	}

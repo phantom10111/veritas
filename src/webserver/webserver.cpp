@@ -37,22 +37,17 @@ void webserver::server_thread(ssl::stream<ip::tcp::socket> *stream){
     ssl_socket socket(stream, ssl::stream<ip::tcp::socket>::server);
     std::string login, pass;
     pqxx::connection conn(DB_CONN_INFO);
-    try {
-        socket.read(login).read(pass);
-    } catch(...) {
-        socket.write("ERROR READ LOGIN PASSWORD");
-        return;
-    }
+    socket.read(login).read(pass);
     pqxx::result users = select_users(conn, login);
     if(users.empty()){
-        socket.write("ERROR NO SUCH USER");
+        socket.write("ERROR NOSUCHUSER");
         return;
     }
     auto user = *users.begin();
     std::string userid = user["userid"].as<std::string>();
     std::string authtoken = user["authtoken"].as<std::string>();
-    if(pass !=authtoken){
-        socket.write("ERROR WRONG PASSWORD");
+    if(pass != authtoken){
+        socket.write("ERROR WRONGPASSWORD");
         return;
     }
     std::string command;

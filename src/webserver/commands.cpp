@@ -26,7 +26,7 @@ void submit(pqxx::result::tuple &user,
     pqxx::result contests = txn.prepared("user contests")(userid)
                                                     (contestname).exec();
     if(contests.empty()){
-        socket.write("ERROR NO SUCH PARTICIPATION");
+        socket.write("ERROR NOSUCHPARTICIPATION");
         return;
     }
     std::string contestid = contests.begin()["contestid"].as<std::string>();
@@ -38,7 +38,7 @@ void submit(pqxx::result::tuple &user,
     pqxx::result variants = txn.prepared("variantid")(contestid)
                                                     (shortname).exec();
     if(contests.empty()){
-        socket.write("ERROR NO SUCH VARIANT");
+        socket.write("ERROR NOSUCHVARIANT");
         return;
     }
     std::string variantid = variants.begin()["variantid"].as<std::string>();
@@ -49,7 +49,7 @@ void submit(pqxx::result::tuple &user,
         "." + 
         extension;
     if(socket.readfile(filename, MAX_SUBMIT_SIZE)){
-        socket.write("ERROR FILE TO LARGE");
+        socket.write("ERROR FILETOLARGE");
         return;
     }
     std::ifstream filestream(filename.c_str(), std::ios::binary | std::ios::ate);
