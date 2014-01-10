@@ -55,7 +55,7 @@ void webserver::server_thread(ssl::stream<ip::tcp::socket> *stream){
     if(handlers.count(command))
         handlers[command](user, socket, conn);
     else
-        socket.write("ERROR NO SUCH COMMAND");
+        socket.write("ERROR NOSUCHCOMMAND");
 }
 
 pqxx::result webserver::select_users(
