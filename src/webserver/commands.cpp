@@ -74,10 +74,39 @@ void submit(pqxx::result::tuple &user,
     delete[] submit_bytes;
     socket.write("OK");
 }
+void viewcontests(
+        pqxx::result::tuple &user, 
+        ssl_socket& socket, 
+        pqxx::connection &conn){
+    pqxx::work txn(conn);
+    pqxx::result contests;
+    if(user["is_administrator"].as<bool>()){
+        conn.prepare("all contests",
+            "SELECT contestname, description"
+            "  FROM contests                ");
+        contests = txn.prepared("all contests").exec();
+    } else {
+        conn.prepare("contests",
+                "      SELECT contestname, description"
+                "        FROM contests                "
+                "NATURAL JOIN participations          "
+                "       WHERE userid = $1             ");
+        std::string userid = user["userid"].as<std::string>();
+        contests = txn.prepared("contests")(userid).exec();
+    }
+    
+    for(auto row : contests){
+        socket.write(row["contestname"].as<std::string>(), '\t')
+              .write(row["description"].as<std::string>(), '\n');
+    }
+    socket.write("OK", '\n');
+    return;   
+}
 
 std::map<std::string, command_handler> command_handlers(){
     std::map<std::string, command_handler> result;
     result["submit"] = submit;
+    result["viewcontests"] = viewcontests;
     return result;
 }
 

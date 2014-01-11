@@ -15,14 +15,16 @@ ssl_socket::~ssl_socket()
 	delete socket;
 }
 
-ssl_socket& ssl_socket::write(std::string const &what)
+ssl_socket& ssl_socket::write(std::string const &what, char delim)
 {
+    char delim_str[1];
+    delim_str[0] = delim;
     boost::asio::write(*socket, boost::asio::buffer(what.c_str(), what.size()));
-    boost::asio::write(*socket, boost::asio::buffer(" ", 1));
+    boost::asio::write(*socket, boost::asio::buffer(delim_str));
     return *this;
 }
 
-ssl_socket& ssl_socket::read(std::string& what)
+ssl_socket& ssl_socket::read(std::string& what, char delim)
 {
 	char c[1024];
 	std::stringstream str;
@@ -37,7 +39,7 @@ ssl_socket& ssl_socket::read(std::string& what)
 			pos = 0;
 		}
 		char c = buf[pos++];
-		if(c == ' ')
+		if(c == delim)
 			break;
 		str << c;
 	}
