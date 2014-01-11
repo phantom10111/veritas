@@ -26,7 +26,7 @@ void submit(pqxx::result::tuple &user,
     pqxx::result contests = txn.prepared("user contests")(userid)
                                                     (contestname).exec();
     if(contests.empty()){
-        socket.write("ERROR NOSUCHPARTICIPATION");
+        socket.write("ERROR NOSUCHPARTICIPATION", '\n');
         return;
     }
     std::string contestid = contests.begin()["contestid"].as<std::string>();
@@ -38,7 +38,7 @@ void submit(pqxx::result::tuple &user,
     pqxx::result variants = txn.prepared("variantid")(contestid)
                                                     (shortname).exec();
     if(contests.empty()){
-        socket.write("ERROR NOSUCHVARIANT");
+        socket.write("ERROR NOSUCHVARIANT", '\n');
         return;
     }
     std::string variantid = variants.begin()["variantid"].as<std::string>();
@@ -49,7 +49,7 @@ void submit(pqxx::result::tuple &user,
         "." + 
         extension;
     if(socket.readfile(filename, MAX_SUBMIT_SIZE)){
-        socket.write("ERROR FILETOLARGE");
+        socket.write("ERROR FILETOLARGE", '\n');
         return;
     }
     std::ifstream filestream(filename.c_str(), std::ios::binary | std::ios::ate);
@@ -74,6 +74,7 @@ void submit(pqxx::result::tuple &user,
     delete[] submit_bytes;
     socket.write("OK");
 }
+
 void viewcontests(
         pqxx::result::tuple &user, 
         ssl_socket& socket, 
@@ -87,10 +88,10 @@ void viewcontests(
         contests = txn.prepared("all contests").exec();
     } else {
         conn.prepare("contests",
-                "      SELECT contestname, description"
-                "        FROM contests                "
-                "NATURAL JOIN participations          "
-                "       WHERE userid = $1             ");
+                "      SELECT contestname, description "
+                "        FROM contests                 "
+                "NATURAL JOIN participations           "
+                "       WHERE userid = $1              ");
         std::string userid = user["userid"].as<std::string>();
         contests = txn.prepared("contests")(userid).exec();
     }
@@ -103,10 +104,52 @@ void viewcontests(
     return;   
 }
 
+void viewvariants(
+        pqxx::result::tuple &user, 
+        ssl_socket& socket, 
+        pqxx::connection &conn){
+    std::string contestname;
+    socket.read(contestname);
+    pqxx::work txn(conn);
+    conn.prepare("user contests", 
+        "      SELECT contestid        " 
+        "        FROM participations   "
+        "NATURAL JOIN contests         "
+        "       WHERE userid = $1      "
+        "         AND contestname = $2 ");
+    int userid = user["userid"].as<int>();
+    pqxx::result contests = txn.prepared("user contests")(userid)
+                                                    (contestname).exec();
+    if(contests.empty()){
+        socket.write("ERROR NOSUCHPARTICIPATION", '\n');
+        return;
+    }
+    int contestid = contests.begin()["contestid"].as<int>();
+    
+    conn.prepare("variants", 
+        "SELECT shortname, variantname, submissible_to " 
+        "  FROM variants                               "
+        " WHERE contestid = $1                         ");
+    
+    pqxx::result variants = txn.prepared("variants")(contestid).exec();
+    for(auto row : variants){
+        auto const &submissible_to = row["submissible_to"];
+        std::string deadline = submissible_to.is_null() ? "none" :
+                               submissible_to.as<std::string>();
+        socket.write(row["shortname"].as<std::string>(), ' ')
+              .write(row["variantname"].as<std::string>(), '\n')
+              .write("DEADLINE", ' ')
+              .write(deadline, '\n');
+    }
+    socket.write("OK", '\n');
+    return;   
+}
+
 std::map<std::string, command_handler> command_handlers(){
     std::map<std::string, command_handler> result;
     result["submit"] = submit;
     result["viewcontests"] = viewcontests;
+    result["viewvariants"] = viewvariants;
     return result;
 }
 

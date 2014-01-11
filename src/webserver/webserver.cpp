@@ -40,14 +40,14 @@ void webserver::server_thread(ssl::stream<ip::tcp::socket> *stream){
     socket.read(login).read(pass);
     pqxx::result users = select_users(conn, login);
     if(users.empty()){
-        socket.write("ERROR NOSUCHUSER");
+        socket.write("ERROR NOSUCHUSER", '\n');
         return;
     }
     auto user = *users.begin();
     std::string userid = user["userid"].as<std::string>();
     std::string authtoken = user["authtoken"].as<std::string>();
     if(pass != authtoken){
-        socket.write("ERROR WRONGPASSWORD");
+        socket.write("ERROR WRONGPASSWORD", '\n');
         return;
     }
     std::string command;
@@ -55,7 +55,7 @@ void webserver::server_thread(ssl::stream<ip::tcp::socket> *stream){
     if(handlers.count(command))
         handlers[command](user, socket, conn);
     else
-        socket.write("ERROR NOSUCHCOMMAND");
+        socket.write("ERROR NOSUCHCOMMAND", '\n');
 }
 
 pqxx::result webserver::select_users(
