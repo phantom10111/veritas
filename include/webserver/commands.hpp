@@ -10,6 +10,7 @@ typedef void (*command_handler)(pqxx::result::tuple&, ssl_socket&, pqxx::connect
 void submit(pqxx::result::tuple&, ssl_socket&, pqxx::connection&);
 void viewcontests(pqxx::result::tuple&, ssl_socket&, pqxx::connection&);
 void viewvariants(pqxx::result::tuple&, ssl_socket&, pqxx::connection&);
+void viewvariant(pqxx::result::tuple&, ssl_socket&, pqxx::connection&);
 
 std::map<std::string, command_handler> command_handlers(); 
 

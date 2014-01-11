@@ -136,12 +136,60 @@ void viewvariants(
         auto const &submissible_to = row["submissible_to"];
         std::string deadline = submissible_to.is_null() ? "none" :
                                submissible_to.as<std::string>();
-        socket.write(row["shortname"].as<std::string>(), ' ')
-              .write(row["variantname"].as<std::string>(), '\n')
-              .write("DEADLINE", ' ')
-              .write(deadline, '\n');
+        socket
+            .write("CONTEST")
+            .write(row["shortname"].as<std::string>())
+            .write(row["variantname"].as<std::string>(), '\n')
+            .write("DEADLINE")
+            .write(deadline, '\n');
     }
     socket.write("OK", '\n');
+    return;   
+}
+
+void viewvariant(
+        pqxx::result::tuple &user, 
+        ssl_socket& socket, 
+        pqxx::connection &conn){
+    std::string contestname, shortname;
+    socket.read(contestname).read(shortname);
+    pqxx::work txn(conn);
+    conn.prepare("user contests", 
+        "      SELECT contestid        " 
+        "        FROM participations   "
+        "NATURAL JOIN contests         "
+        "       WHERE userid = $1      "
+        "         AND contestname = $2 ");
+    int userid = user["userid"].as<int>();
+    pqxx::result contests = txn.prepared("user contests")(userid)
+                                                    (contestname).exec();
+    if(contests.empty()){
+        socket.write("ERROR NOSUCHPARTICIPATION", '\n');
+        return;
+    }
+    int contestid = contests.begin()["contestid"].as<int>();
+    
+    conn.prepare("variant", 
+        "SELECT variantname, description " 
+        "  FROM variants                 "
+        " WHERE contestid = $1           "
+        "   AND shortname = $2           ");
+    
+    pqxx::result variants = txn.prepared("variant")(contestid)
+                                                  (shortname).exec();
+                                                  
+    if(variants.empty()){
+        socket.write("ERROR NOSUCHVARIANT", '\n');
+        return;
+    }
+    for(auto row : variants){
+        socket
+            .write("VARIANT")
+            .write(shortname)
+            .write(row["variantname"].as<std::string>(), '\n')
+            .writetext(row["description"].as<std::string>());
+    }
+    socket.write("\nOK", '\n');
     return;   
 }
 
@@ -150,6 +198,7 @@ std::map<std::string, command_handler> command_handlers(){
     result["submit"] = submit;
     result["viewcontests"] = viewcontests;
     result["viewvariants"] = viewvariants;
+    result["viewvariant"] = viewvariant;
     return result;
 }
 

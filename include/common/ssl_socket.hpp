@@ -13,6 +13,8 @@ public:
 
 	ssl_socket& write(std::string const&, char = ' ');
 	ssl_socket& read(std::string&, char = ' ');
+	ssl_socket& writetext(std::string const &);
+	ssl_socket& readtext(std::string &);
 	int writefile(std::string const &, int);
 	int readfile(std::string const &, int);
 

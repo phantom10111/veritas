@@ -47,6 +47,36 @@ ssl_socket& ssl_socket::read(std::string& what, char delim)
 	return *this;
 }
 
+ssl_socket &ssl_socket::writetext(std::string const &what){
+    write(std::to_string(what.size()));
+    boost::asio::write(*socket, boost::asio::buffer(what.c_str(), what.size()));
+}
+
+ssl_socket &ssl_socket::readtext(std::string &what){
+    std::string sizestr;
+    read(sizestr);
+    
+	char c[1024];
+	std::stringstream str;
+	
+	int size = atoi(sizestr.c_str());
+	
+	for(int i = 0; i < size; i++)
+	{
+		if(pos >= buf.size())
+		{
+			int len = socket->read_some(boost::asio::buffer(c));
+        	buf = std::string(c, len);
+        	
+			pos = 0;
+		}
+		str << buf[pos++];
+	}
+	what = str.str();
+	return *this;
+}
+	
+
 int ssl_socket::writefile(std::string const &filename, int max_size){
     char c[BUFFER_SIZE + 1];
 	std::ifstream filestream(filename.c_str(), std::ios::binary | std::ios::ate);
