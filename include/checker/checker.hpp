@@ -15,5 +15,6 @@ public:
         std::string const &run_script_filename, 
         test_data const &test
     );
+    int descriptor_setup();
 };
 #endif
