@@ -5,6 +5,7 @@
 #include <string>
 #include <iostream>
 #include <fstream>
+#include <sys/stat.h>
 
 submission_data resource_manager::get_submission_data(
     std::string submissionid
@@ -31,11 +32,14 @@ submission_data resource_manager::get_submission_data(
     pqxx::binarystring compile_script(row["compile_script"]),
                        run_script    (row["run_script"]);
                        
-    std::string compile_script_filename = std::string("compile") + running_optionid;
-    std::string run_script_filename = std::string("run") + running_optionid;
+    std::string compile_script_filename = std::string("./compile") + running_optionid;
+    std::string run_script_filename = std::string("./run") + running_optionid;
     
     write_to_file(compile_script_filename, compile_script);
     write_to_file(run_script_filename, run_script);
+
+    chmod(compile_script_filename.c_str(), S_IRWXU);
+    chmod(run_script_filename.c_str(), S_IRWXU);
     
     auto solution = select_solution(conn, submissionid);
     
