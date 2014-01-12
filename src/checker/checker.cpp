@@ -32,7 +32,7 @@ int checker::compile(
 	{
 		sleep(5);
 		int result = waitpid(childpid, &status, WNOHANG);
-		if(result == 0)
+		if(result != -1)
 		{
 			if(!WIFEXITED(status))
 				return -1;
