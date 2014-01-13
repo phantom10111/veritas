@@ -72,7 +72,7 @@ void submit(pqxx::result::tuple &user,
     txn.commit();
         
     delete[] submit_bytes;
-    socket.write("OK");
+    socket.write("OK", '\n');
 }
 
 void viewcontests(
