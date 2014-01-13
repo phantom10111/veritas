@@ -102,7 +102,7 @@ test_result checker::test_solution(
 	{
 		if(descriptor_setup() != 0)
 			exit(-1);
-		execlp("diff", "diff", "-bq", "tmpresult", "outfilename", NULL);
+		execlp("diff", "diff", "-bq", "tmpresult", test.outfilename.c_str(), NULL);
 		exit(-1);
 	}
 	do
