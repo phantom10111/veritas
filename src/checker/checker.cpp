@@ -73,7 +73,7 @@ test_result checker::test_solution(
 		lim.rlim_max = 1024 * 1024 * 1024;
 		setrlimit(RLIMIT_FSIZE, &lim);
 		lim.rlim_cur = timelimit;
-		lim.rlim_max = timelimit + 1;
+		lim.rlim_max = timelimit * 2;
 		setrlimit(RLIMIT_CPU, &lim);
 		execl(run_script_filename.c_str(), run_script_filename.c_str(), solution_filename.c_str(), test.infilename.c_str(), "tmpresult", NULL);
 		exit(-1);
