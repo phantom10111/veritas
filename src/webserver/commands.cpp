@@ -1,4 +1,3 @@
-
 #include "common/config.hpp"
 #include "common/ssl_socket.hpp"
 #include "webserver/commands.hpp"
@@ -69,9 +68,56 @@ void submit(pqxx::result::tuple &user,
         "     VALUES($1, $2, $3, $4)                                 ");
         
     txn.prepared("submit")(userid)(variantid)(extension)(submit_binary).exec();
-    txn.commit();
-        
     delete[] submit_bytes;
+    
+    std::string submissionid = txn.exec(
+        "SELECT currval('submissions_submissionid_seq') "
+        "    AS submissionid                            "
+    ).begin()["submissionid"].as<std::string>();
+    txn.commit();
+    
+    boost::asio::io_service ios;
+
+    int minqsize, minqchecker = -1;
+    
+	
+	for(int checker = 0; checker < n_checkers; checker++){
+	    std::string host = checker_hosts[checker];
+	    std::string port = std::to_string(checker_ports[checker]);
+	    boost::asio::ip::tcp::iostream connection(host, port);
+        boost::asio::ip::tcp::no_delay opt(true);
+        connection.rdbuf()->set_option(opt);
+        if(!connection.good()) {
+            socket.write("ERROR BADCONNECTION", '\n');
+            return;
+        }
+        std::string input;
+        int qsize;
+        connection << "QSIZE" << std::endl;
+        connection >> input >> qsize;
+        if(minqsize == -1 || qsize < minqsize){
+            minqsize = qsize;
+            minqchecker = checker;
+        }
+	}
+    if(minqchecker == -1){
+        socket.write("ERROR NOCHECKER", '\n');
+    }
+    std::string host = checker_hosts[minqchecker];
+	std::string port = std::to_string(checker_ports[minqchecker]);
+	boost::asio::ip::tcp::iostream connection(host, port);
+    boost::asio::ip::tcp::no_delay opt(true);
+    connection.rdbuf()->set_option(opt);
+    if(!connection.good()){
+        socket.write("ERROR BADCONNECTION", '\n');
+        return;
+    }
+    connection << "TEST " << submissionid << std::endl;
+    std::string line;
+    do {
+        std::getline(connection, line);
+        socket.write(line, '\n');
+    } while(line.size() < 3 || line.substr(0, 3) != "END");
     socket.write("OK", '\n');
 }
 
