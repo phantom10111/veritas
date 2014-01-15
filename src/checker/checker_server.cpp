@@ -95,6 +95,8 @@ void checker_server::checker_thread(){
                               << result.time
                               << std::endl
                               << std::endl;
+                _resource_manager.add_test_result(test_result(submissionid, 
+                    result.status, result.testid));
                     if(result.status != "OK"){
                         end_status = result.status;
                         goto outside;

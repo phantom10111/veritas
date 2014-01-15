@@ -86,7 +86,25 @@ std::vector<testgroup_data> resource_manager::get_tests(std::string variantid){
     return testgroup_vector;
 }
 void resource_manager::add_test_result(test_result result){
-    //TODO sending result to db
+    pqxx::connection conn(DB_CONN_INFO);
+    pqxx::work txn(conn);
+    conn.prepare("statusids", 
+        "SELECT statusid    "
+        "  FROM statuses    "
+        " WHERE status = $1 "
+    );
+    pqxx::result statusids = txn.prepared("statusids")(result.status).exec();
+    if(statusids.empty()){
+        statusids = txn.prepared("statusids")("UNK").exec();
+    }
+    int statusid = statusids.begin()["statusid"].as<int>();
+    conn.prepare("insert result",
+        "INSERT INTO results(submissionid, testid, statusid, time)"
+        "     VALUES ($1, $2, $3, $4)                             "
+    );
+    txn.prepared("insert result")(result.submissionid)(result.testid)
+        (statusid)(result.time).exec();
+    txn.commit();
 }
 
 void resource_manager::write_to_file(
