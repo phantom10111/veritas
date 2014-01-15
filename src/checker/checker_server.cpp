@@ -42,6 +42,8 @@ void checker_server::acceptor_thread(int port){
 }
 void checker_server::checker_thread(){
     while(true){
+      try
+      {
         boost::asio::ip::tcp::iostream *stream;
         {
             std::unique_lock<std::mutex> lock(_mutex);
@@ -117,5 +119,6 @@ void checker_server::checker_thread(){
             break;
         }
         delete stream;
+      } catch(...) {}
     }
 }
