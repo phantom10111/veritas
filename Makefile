@@ -24,6 +24,6 @@ clean:
 	cd src/client && $(MAKE) clean
 	cd src/common && $(MAKE) clean
 	cd src/webserver && $(MAKE) clean
-	$(RM) checker client webserver privkey.pem server.pem dh512.pem
+	$(RM) checker client webserver privkey.pem server.pem
 
 .PHONY: all checker client webserver clean

@@ -1,7 +1,7 @@
 CXXFLAGS := -O2
 
 override COMPILE_OPTIONS := -std=gnu++11 -I$(ROOT)/include
-override LINK_OPTIONS := -L/usr/local/lib -Wl,-rpath /usr/local/lib -lboost_system -lpqxx -lpq -lssl -lcrypto -lpthread
+override LINK_OPTIONS := -L/usr/local/lib -Wl,-rpath /usr/local/lib -lboost_system -lpqxx -lssl -lcrypto -lpthread
 
 RMALL = $(RM) *.o *.d
 
