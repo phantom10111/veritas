@@ -7,6 +7,7 @@
 #include <cstdlib>
 #include <fstream>
 #include <map>
+using namespace boost::asio;
 
 
 void submit(pqxx::result::tuple &user, 
@@ -82,42 +83,55 @@ void submit(pqxx::result::tuple &user,
     
 	
 	for(int checker = 0; checker < n_checkers; checker++){
-	    std::string host = checker_hosts[checker];
-	    std::string port = std::to_string(checker_ports[checker]);
-	    boost::asio::ip::tcp::iostream connection(host, port);
-        boost::asio::ip::tcp::no_delay opt(true);
-        connection.rdbuf()->set_option(opt);
-        if(!connection.good()) {
-            socket.write("ERROR BADCONNECTION", '\n');
-            return;
-        }
+      try {
+	    //std::string host = checker_hosts[checker];
+	    //TODO: change to connect to actual host
+        ip::tcp::endpoint endpoint(ip::tcp::v4(), checker_ports[checker]);
+        ssl::context ctx(ssl::context::tlsv1_client);
+        ctx.set_options(ssl::context::default_workarounds | ssl::context::no_sslv2);
+        ctx.set_verify_mode(ssl::verify_peer);
+        ctx.load_verify_file(certfile);
+        auto stream = new ssl::stream<ip::tcp::socket>(ios, ctx);
+        stream->lowest_layer().connect(endpoint);
+        ssl_socket connection(stream, ssl::stream<ip::tcp::socket>::client);
         std::string input;
+        std::istringstream ss;
+        connection.read(input, '\n');
+        ss.str(input);
         int qsize;
-        connection << "QSIZE" << std::endl;
-        connection >> input >> qsize;
+        ss >> qsize;
         if(minqsize == -1 || qsize < minqsize){
             minqsize = qsize;
             minqchecker = checker;
         }
+      } catch(...) {
+          socket.write("ERROR BADCONNECTION", '\n');
+          return;
+      }
 	}
     if(minqchecker == -1){
         socket.write("ERROR NOCHECKER", '\n');
     }
-    std::string host = checker_hosts[minqchecker];
-	std::string port = std::to_string(checker_ports[minqchecker]);
-	boost::asio::ip::tcp::iostream connection(host, port);
-    boost::asio::ip::tcp::no_delay opt(true);
-    connection.rdbuf()->set_option(opt);
-    if(!connection.good()){
-        socket.write("ERROR BADCONNECTION", '\n');
-        return;
-    }
-    connection << "TEST " << submissionid << std::endl;
+  try {
+    //std::string host = checker_hosts[minqchecker];
+    //TODO: change to connect to actual host
+    ip::tcp::endpoint endpoint(ip::tcp::v4(), checker_ports[minqchecker]);
+    ssl::context ctx(ssl::context::tlsv1_client);
+    ctx.set_options(ssl::context::default_workarounds | ssl::context::no_sslv2);
+    ctx.set_verify_mode(ssl::verify_peer);
+    ctx.load_verify_file(certfile);
+    auto stream = new ssl::stream<ip::tcp::socket>(ios, ctx);
+	ssl_socket connection(stream, ssl::stream<ip::tcp::socket>::client);
+    connection.write("TEST", '\n').write(submissionid, '\n');
     std::string line;
     do {
-        std::getline(connection, line);
+        connection.read(line, '\n');
         socket.write(line, '\n');
     } while(line.size() < 3 || line.substr(0, 3) != "END");
+  } catch(...) {
+    socket.write("ERROR BADCONNECTION", '\n');
+    return;
+  }
     socket.write("OK", '\n');
 }
 

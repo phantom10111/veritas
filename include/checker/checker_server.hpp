@@ -2,6 +2,7 @@
 #define CHECKER_SERVER_HPP
 #include "checker/checker.hpp"
 #include "checker/resource_manager.hpp"
+#include "common/ssl_socket.hpp"
 #include <queue>
 #include <boost/asio/io_service.hpp>
 #include <boost/asio/io_service.hpp>
@@ -18,7 +19,7 @@ private:
     void checker_thread();
     checker                                    _checker;
     resource_manager                           _resource_manager;
-    std::queue<boost::asio::ip::tcp::iostream*> _queue;
+    std::queue<ssl_socket*>                    _queue;
     std::mutex                                 _mutex;
     std::condition_variable                    _condition;
 };

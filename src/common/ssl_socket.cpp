@@ -50,6 +50,7 @@ ssl_socket& ssl_socket::read(std::string& what, char delim)
 ssl_socket &ssl_socket::writetext(std::string const &what){
     write(std::to_string(what.size()));
     boost::asio::write(*socket, boost::asio::buffer(what.c_str(), what.size()));
+    return *this;
 }
 
 ssl_socket &ssl_socket::readtext(std::string &what){
