@@ -13,6 +13,8 @@ void checker_server::acceptor_thread(int port){
     boost::asio::ip::tcp::endpoint endpoint(boost::asio::ip::tcp::v4(), port);
     boost::asio::ip::tcp::acceptor acceptor(ios, endpoint);
     while(true){
+      try
+      {
         boost::asio::ip::tcp::iostream *stream = 
             new boost::asio::ip::tcp::iostream();
         acceptor.accept(*(*stream).rdbuf());
@@ -35,6 +37,7 @@ void checker_server::acceptor_thread(int port){
         } else {
             delete stream;
         }
+      } catch(...) {}
     }
 }
 void checker_server::checker_thread(){
