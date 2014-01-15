@@ -55,12 +55,15 @@ void checker_server::checker_thread(){
             _resource_manager.get_submission_data(submissionid);
         switch(submission.result){
         case submission_data::NO_SUCH_SUBMISSION:
-            (*stream) << "NOSUCHSUBMISSION" << std::endl;
+            (*stream) << "END NO SUCH SUBMISSION" << std::endl;
             break;
         case submission_data::NO_SUCH_EXTENSION:
             _resource_manager.add_test_result(test_result(submissionid, "EXT", 
-            "-1"));//TODO change -1 to actual testid (any testid)
-            (*stream) << "RESULT EXT" << std::endl;
+            submission.testid));
+            (*stream) << "END EXT" << std::endl;
+            break;
+        case submission_data::NO_TEST:
+            (*stream) << "END NO TEST" << std::endl;
             break;
         case submission_data::OK:
             auto compiled_filename = submissionid;
@@ -71,9 +74,10 @@ void checker_server::checker_thread(){
             );
             if(compilation_status){
                 _resource_manager.add_test_result(test_result(submissionid, 
-                    "CME", "-1"));//TODO change -1 to actual testid (any testid)
-                (*stream) << "RESULT CME" 
+                    "CME", submission.testid));
+                (*stream) << "END CME" 
                           << std::endl;
+                break;
             }
             auto testgroups = _resource_manager.get_tests(submission.variantid);
             std::string end_status = "OK";

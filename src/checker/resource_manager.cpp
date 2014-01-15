@@ -21,11 +21,15 @@ submission_data resource_manager::get_submission_data(
     std::string variantid = row["variantid"].as<std::string>(),
                 extension = row["extension"].as<std::string>();
     
-    
+    pqxx::result testids = select_any_test(conn, variantid);
+    if(testids.empty()){
+        return submission_data(submission_data::NO_TEST);
+    }
+    std::string testid = testids.begin()["testid"].as<std::string>();
     pqxx::result option = select_option(conn, variantid, extension);
     
     if(option.empty())
-        return submission_data(submission_data::NO_SUCH_EXTENSION);
+        return submission_data(submission_data::NO_SUCH_EXTENSION, testid);
     
     row = option.begin();
     std::string running_optionid = row["running_optionid"].as<std::string>();
@@ -52,7 +56,7 @@ submission_data resource_manager::get_submission_data(
     
     write_to_file(solution_filename, solution_file);
         
-    return submission_data(submission_data::OK, solution_filename, 
+    return submission_data(submission_data::OK, testid, solution_filename, 
                 compile_script_filename, run_script_filename, variantid);
 }
 
@@ -169,4 +173,18 @@ pqxx::result resource_manager::select_solution(pqxx::connection &conn,
                            FROM submissions \
                           WHERE submissionid = "+ submissionid +";";
     return txn.exec(query);
+}
+pqxx::result resource_manager::select_any_test(pqxx::connection &conn,
+                                    std::string variantid){
+    pqxx::work txn(conn);
+    conn.prepare("any testid",
+        "      SELECT testid              "
+        "        FROM variants_testgroups "
+        "NATURAL JOIN testgroups          "
+        "NATURAL JOIN testgroups_tests    "
+        "NATURAL JOIN tests               "
+        "       WHERE variantid = $1      "
+        "       LIMIT 1                   "
+    );
+    return txn.prepared("any testid")(variantid).exec();
 }
