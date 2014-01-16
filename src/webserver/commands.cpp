@@ -81,7 +81,6 @@ void submit(pqxx::result::tuple &user,
 
     int minqsize, minqchecker = -1;
     
-	
 	for(int checker = 0; checker < n_checkers; checker++){
       try {
 	    //std::string host = checker_hosts[checker];
@@ -94,13 +93,14 @@ void submit(pqxx::result::tuple &user,
         auto stream = new ssl::stream<ip::tcp::socket>(ios, ctx);
         stream->lowest_layer().connect(endpoint);
         ssl_socket connection(stream, ssl::stream<ip::tcp::socket>::client);
+        connection.write("QSIZE", '\n');
         std::string input;
         std::istringstream ss;
         connection.read(input, '\n');
         ss.str(input);
         int qsize;
         ss >> qsize;
-        if(minqsize == -1 || qsize < minqsize){
+        if(minqchecker == -1 || qsize < minqsize){
             minqsize = qsize;
             minqchecker = checker;
         }
@@ -111,6 +111,7 @@ void submit(pqxx::result::tuple &user,
 	}
     if(minqchecker == -1){
         socket.write("ERROR NOCHECKER", '\n');
+        return;
     }
   try {
     //std::string host = checker_hosts[minqchecker];
@@ -121,7 +122,8 @@ void submit(pqxx::result::tuple &user,
     ctx.set_verify_mode(ssl::verify_peer);
     ctx.load_verify_file(certfile);
     auto stream = new ssl::stream<ip::tcp::socket>(ios, ctx);
-	ssl_socket connection(stream, ssl::stream<ip::tcp::socket>::client);
+	stream->lowest_layer().connect(endpoint);
+    ssl_socket connection(stream, ssl::stream<ip::tcp::socket>::client);
     connection.write("TEST", '\n').write(submissionid, '\n');
     std::string line;
     do {
@@ -197,7 +199,7 @@ void viewvariants(
         std::string deadline = submissible_to.is_null() ? "none" :
                                submissible_to.as<std::string>();
         socket
-            .write("CONTEST")
+            .write("VARIANT")
             .write(row["shortname"].as<std::string>())
             .write(row["variantname"].as<std::string>(), '\n')
             .write("DEADLINE")
