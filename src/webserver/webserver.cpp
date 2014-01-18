@@ -35,11 +35,15 @@ void webserver::run(int port){
 void webserver::server_thread(ssl::stream<ip::tcp::socket> *stream){
   try
   {
+    
     ssl_socket socket(stream, ssl::stream<ip::tcp::socket>::server);
     std::string login, pass;
     pqxx::connection conn(DB_CONN_INFO);
+    std::cout << "..." << std::endl;
     socket.read(login).read(pass);
+    std::cout << "..." << std::endl;
     pqxx::result users = select_users(conn, login);
+    std::cout << "..." << std::endl;
     if(users.empty()){
         socket.write("ERROR NOSUCHUSER", '\n');
         return;
@@ -53,11 +57,12 @@ void webserver::server_thread(ssl::stream<ip::tcp::socket> *stream){
     }
     std::string command;
     socket.read(command);
+    std::cout << "ws" << std::endl;
     if(handlers.count(command))
         handlers[command](user, socket, conn);
     else
         socket.write("ERROR NOSUCHCOMMAND", '\n');
-  } catch(...) {}
+  } catch(...) {std::cout << "sigh" << std::endl;}
 }
 
 pqxx::result webserver::select_users(

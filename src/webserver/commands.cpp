@@ -81,7 +81,7 @@ void submit(pqxx::result::tuple &user,
 
     int minqsize, minqchecker = -1;
     
-	for(int checker = 0; checker < n_checkers; checker++){
+    for(int checker = 0; checker < n_checkers; checker++){
       try {
 	    //std::string host = checker_hosts[checker];
 	    //TODO: change to connect to actual host
@@ -105,8 +105,6 @@ void submit(pqxx::result::tuple &user,
             minqchecker = checker;
         }
       } catch(...) {
-          socket.write("ERROR BADCONNECTION", '\n');
-          return;
       }
 	}
     if(minqchecker == -1){
@@ -255,12 +253,49 @@ void viewvariant(
     return;   
 }
 
+void viewproblems(
+        pqxx::result::tuple &user, 
+        ssl_socket& socket, 
+        pqxx::connection &conn){
+    pqxx::work txn(conn);
+    conn.prepare("moderated contests", 
+        "      SELECT contestid           " 
+        "        FROM participations      "
+        "       WHERE userid = $1         "
+        "         AND is_moderator = true ");
+    int userid = user["userid"].as<int>();
+    pqxx::result contests = txn.prepared("user contests")(userid).exec();
+    if(contests.empty() && !user["is_administrator"].as<bool>()){
+        socket.write("ERROR NOPERMISSION", '\n');
+        return;
+    }
+    conn.prepare("problems", 
+        "SELECT problemid, problemname " 
+        "  FROM problems               ");
+    
+    pqxx::result problems = txn.prepared("problems").exec();
+                                                  
+    if(problems.empty()){
+        socket.write("ERROR NOPROBLEMS", '\n');
+        return;
+    }
+    for(auto row : problems){
+        socket
+            .write("PROBLEM")
+            .write(row["problemid"].as<std::string>())
+            .write(row["problemname"].as<std::string>(), '\n');
+    }
+    socket.write("\nOK", '\n');
+    return;   
+}
+
 std::map<std::string, command_handler> command_handlers(){
     std::map<std::string, command_handler> result;
     result["submit"] = submit;
     result["viewcontests"] = viewcontests;
     result["viewvariants"] = viewvariants;
     result["viewvariant"] = viewvariant;
+    result["viewproblems"] = viewproblems;
     return result;
 }
 
