@@ -256,7 +256,6 @@ void viewvariant(
     socket.write("\nOK", '\n');
     return;   
 }
-
 void viewproblems(
         pqxx::result::tuple &user, 
         ssl_socket& socket, 
@@ -268,7 +267,7 @@ void viewproblems(
         "       WHERE userid = $1         "
         "         AND is_moderator = true ");
     int userid = user["userid"].as<int>();
-    pqxx::result contests = txn.prepared("user contests")(userid).exec();
+    pqxx::result contests = txn.prepared("moderated contests")(userid).exec();
     if(contests.empty() && !user["is_administrator"].as<bool>()){
         socket.write("ERROR NOPERMISSION", '\n');
         return;
@@ -293,6 +292,56 @@ void viewproblems(
     return;   
 }
 
+void viewproblem(
+        pqxx::result::tuple &user, 
+        ssl_socket& socket, 
+        pqxx::connection &conn){
+    pqxx::work txn(conn);
+    conn.prepare("moderated contests", 
+        "      SELECT contestid           " 
+        "        FROM participations      "
+        "       WHERE userid = $1         "
+        "         AND is_moderator = true ");
+    int userid = user["userid"].as<int>();
+    pqxx::result contests = txn.prepared("moderated contests")(userid).exec();
+    if(contests.empty() && !user["is_administrator"].as<bool>()){
+        socket.write("ERROR NOPERMISSION", '\n');
+        return;
+    }
+    conn.prepare("problems", 
+        "SELECT *             " 
+        "  FROM problems      "
+        " WHERE problemid = $1");
+    
+    std::string problemid_str;
+    socket.read(problemid_str);
+    int problemid = atoi(problemid_str.c_str());
+    pqxx::result problems = txn.prepared("problems")(problemid).exec();
+                                                  
+    if(problems.empty()){
+        socket.write("ERROR NOSUCHPROBLEM", '\n');
+        return;
+    }
+    for(auto row : problems){
+        socket
+            .write("PROBLEM")
+            .write(row["problemid"].as<std::string>())
+            .write(row["problemname"].as<std::string>(), '\n')
+            .writetext(row["description"].as<std::string>()).write("", '\n');
+    }
+    conn.prepare("testgroups",
+        "SELECT * FROM testgroups WHERE problemid = $1");
+    pqxx::result testgroups = txn.prepared("testgroups")(problemid).exec();
+    for(auto row : testgroups){
+        socket
+            .write("TESTGROUP")
+            .write(row["testgroupid"].as<std::string>())
+            .write(row["testgroupname"].as<std::string>());
+    }
+    socket.write("\nOK", '\n');
+    return;   
+}
+
 std::map<std::string, command_handler> command_handlers(){
     std::map<std::string, command_handler> result;
     result["submit"] = submit;
@@ -300,7 +349,10 @@ std::map<std::string, command_handler> command_handlers(){
     result["viewvariants"] = viewvariants;
     result["viewvariant"] = viewvariant;
     result["viewproblems"] = viewproblems;
+    result["viewproblem"] = viewproblem;
     return result;
 }
+
+
 
 
