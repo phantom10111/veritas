@@ -562,6 +562,11 @@ std::map<std::string, command_handler> command_handlers(){
     result["viewproblems"] = viewproblems;
     result["viewproblem"] = viewproblem;
     result["viewtestgroup"] = viewtestgroup;
+    result["viewtest"] = viewtest;
+    result["addproblem"] = addproblem;
+    result["addtestgroup"] = addtestgroup;
+    result["addtest"] = addtest;
+    result["addtesttogroup"] = addtesttogroup;
     return result;
 }
 
