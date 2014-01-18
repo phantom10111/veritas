@@ -256,6 +256,7 @@ void viewvariant(
     socket.write("\nOK", '\n');
     return;   
 }
+
 void viewproblems(
         pqxx::result::tuple &user, 
         ssl_socket& socket, 
@@ -336,10 +337,220 @@ void viewproblem(
         socket
             .write("TESTGROUP")
             .write(row["testgroupid"].as<std::string>())
-            .write(row["testgroupname"].as<std::string>());
+            .write(row["testgroupname"].as<std::string>(), '\n');
     }
     socket.write("\nOK", '\n');
     return;   
+}
+
+void viewtestgroup(
+        pqxx::result::tuple &user, 
+        ssl_socket& socket, 
+        pqxx::connection &conn){
+    pqxx::work txn(conn);
+    conn.prepare("moderated contests", 
+        "      SELECT contestid           " 
+        "        FROM participations      "
+        "       WHERE userid = $1         "
+        "         AND is_moderator = true ");
+    int userid = user["userid"].as<int>();
+    pqxx::result contests = txn.prepared("moderated contests")(userid).exec();
+    if(contests.empty() && !user["is_administrator"].as<bool>()){
+        socket.write("ERROR NOPERMISSION", '\n');
+        return;
+    }
+    conn.prepare("tests", 
+        "SELECT testid, testname      " 
+        "  FROM testgroups_tests      "
+        "NATURAL JOIN tests"
+        " WHERE testgroupid = $1");
+    
+    std::string testgroupid_str;
+    socket.read(testgroupid_str);
+    int testgroupid = atoi(testgroupid_str.c_str());
+    pqxx::result tests = txn.prepared("tests")(testgroupid).exec();
+                                                  
+    if(tests.empty()){
+        socket.write("ERROR EMPTYTESTGROUP", '\n');
+        return;
+    }
+    for(auto row : tests){
+        socket
+            .write("TEST")
+            .write(row["testid"].as<std::string>())
+            .write(row["testname"].as<std::string>(), '\n');
+    }
+    socket.write("\nOK", '\n');
+    return;   
+}
+
+void viewtest(
+        pqxx::result::tuple &user, 
+        ssl_socket& socket, 
+        pqxx::connection &conn){
+    pqxx::work txn(conn);
+    conn.prepare("moderated contests", 
+        "      SELECT contestid           " 
+        "        FROM participations      "
+        "       WHERE userid = $1         "
+        "         AND is_moderator = true ");
+    int userid = user["userid"].as<int>();
+    pqxx::result contests = txn.prepared("moderated contests")(userid).exec();
+    if(contests.empty() && !user["is_administrator"].as<bool>()){
+        socket.write("ERROR NOPERMISSION", '\n');
+        return;
+    }
+    conn.prepare("tests", 
+        "SELECT *      " 
+        "  FROM tests      "
+        " WHERE testid = $1");
+    
+    std::string testid_str;
+    socket.read(testid_str);
+    int testid = atoi(testid_str.c_str());
+    pqxx::result tests = txn.prepared("tests")(testid).exec();
+                                                  
+    if(tests.empty()){
+        socket.write("ERROR NOSUCHTEST", '\n');
+        return;
+    }
+    for(auto row : tests){
+        socket
+            .write("TEST")
+            .write(row["testid"].as<std::string>())
+            .write(row["problemid"].as<std::string>())
+            .write(row["testname"].as<std::string>())
+            .write(row["timelimit"].as<std::string>())
+            .write(row["memlimit"].as<std::string>())
+            .write(row["testname"].as<std::string>(), '\n');
+        socket.writetext(pqxx::binarystring(row["infile"]).str());
+        socket.writetext(pqxx::binarystring(row["outfile"]).str());
+    }
+    socket.write("\nOK", '\n');
+    return;   
+}
+
+void addproblem(
+        pqxx::result::tuple &user, 
+        ssl_socket& socket, 
+        pqxx::connection &conn){
+    pqxx::work txn(conn);
+    conn.prepare("moderated contests", 
+        "      SELECT contestid           " 
+        "        FROM participations      "
+        "       WHERE userid = $1         "
+        "         AND is_moderator = true ");
+    int userid = user["userid"].as<int>();
+    pqxx::result contests = txn.prepared("moderated contests")(userid).exec();
+    if(contests.empty() && !user["is_administrator"].as<bool>()){
+        socket.write("ERROR NOPERMISSION", '\n');
+        return;
+    }
+    std::string problemname, description;
+    socket.read(problemname).readtext(description);
+    conn.prepare("insert problem", 
+        "  INSERT INTO problems(problemname, description) VALUES($1, $2)");
+    txn.prepared("insert problem")(problemname)(description).exec();
+    pqxx::result problemids = 
+    	txn.exec("SELECT currval('problems_problemid_seq') AS problemid");
+    std::string problemid = problemids.begin()["problemid"].as<std::string>();
+    socket.write("PROBLEMID").write(problemid, '\n').write("OK", '\n');
+    txn.commit();
+    return;
+}
+
+void addtestgroup(
+        pqxx::result::tuple &user, 
+        ssl_socket& socket, 
+        pqxx::connection &conn){
+    pqxx::work txn(conn);
+    conn.prepare("moderated contests", 
+        "      SELECT contestid           " 
+        "        FROM participations      "
+        "       WHERE userid = $1         "
+        "         AND is_moderator = true ");
+    int userid = user["userid"].as<int>();
+    pqxx::result contests = txn.prepared("moderated contests")(userid).exec();
+    if(contests.empty() && !user["is_administrator"].as<bool>()){
+        socket.write("ERROR NOPERMISSION", '\n');
+        return;
+    }
+    std::string problemid, testgroupname;
+    socket.read(problemid).read(testgroupname);
+    conn.prepare("insert testgroup", 
+        "  INSERT INTO testgroups(problemid, testgroupname) VALUES($1, $2)");
+    txn.prepared("insert testgroup")(problemid)(testgroupname).exec();
+    pqxx::result testgroupids = 
+    	txn.exec("SELECT currval('testgroups_testgroupid_seq') AS testgroupid");
+    std::string testgroupid = testgroupids.begin()["testgroupid"].as<std::string>();
+    socket.write("TESTGROUPID").write(testgroupid, '\n').write("OK", '\n');
+    txn.commit();
+    return;
+}
+
+void addtest(
+        pqxx::result::tuple &user, 
+        ssl_socket& socket, 
+        pqxx::connection &conn){
+    pqxx::work txn(conn);
+    conn.prepare("moderated contests", 
+        "      SELECT contestid           " 
+        "        FROM participations      "
+        "       WHERE userid = $1         "
+        "         AND is_moderator = true ");
+    int userid = user["userid"].as<int>();
+    pqxx::result contests = txn.prepared("moderated contests")(userid).exec();
+    if(contests.empty() && !user["is_administrator"].as<bool>()){
+        socket.write("ERROR NOPERMISSION", '\n');
+        return;
+    }
+    std::string problemid, testname, description, timelimit_, memlimit_, infile, 
+    	outfile;
+    socket.read(problemid).read(testname).readtext(description).read(timelimit_);
+    //std::cout << problemid << " " << testname << " " << description << " | " << timelimit_ << " " << std::endl;
+    socket.read(memlimit_).readtext(infile).readtext(outfile);
+    conn.prepare("insert test", 
+        "  INSERT INTO tests(problemid, testname, description, timelimit, "
+        "			   memlimit, infile, outfile) "
+        "       VALUES ($1, $2, $3, $4, $5, $6, $7)");
+    float timelimit = atof(timelimit_.c_str());
+    int memlimit = atoi(memlimit_.c_str());
+    //std::cout << timelimit << " " << memlimit << std::endl;
+    txn.prepared("insert test")(problemid)(testname)(description)
+    	(timelimit)(memlimit)(infile)(outfile).exec();
+    pqxx::result testids = 
+    	txn.exec("SELECT currval('tests_testid_seq') AS testid");
+    std::string testid = testids.begin()["testid"].as<std::string>();
+    socket.write("TESTID").write(testid, '\n').write("OK", '\n');
+    txn.commit();
+    return;
+}
+
+void addtesttogroup(
+        pqxx::result::tuple &user, 
+        ssl_socket& socket, 
+        pqxx::connection &conn){
+    pqxx::work txn(conn);
+    conn.prepare("moderated contests", 
+        "      SELECT contestid           " 
+        "        FROM participations      "
+        "       WHERE userid = $1         "
+        "         AND is_moderator = true ");
+    int userid = user["userid"].as<int>();
+    pqxx::result contests = txn.prepared("moderated contests")(userid).exec();
+    if(contests.empty() && !user["is_administrator"].as<bool>()){
+        socket.write("ERROR NOPERMISSION", '\n');
+        return;
+    }
+    std::string testid, testgroupid;
+    socket.read(testid).read(testgroupid);
+    conn.prepare("insert t_t", 
+        "  INSERT INTO testgroups_tests "
+        "       VALUES ($2, $1)");
+    txn.prepared("insert t_t")(testid)(testgroupid).exec();
+    socket.write("OK", '\n');
+    txn.commit();
+    return;
 }
 
 std::map<std::string, command_handler> command_handlers(){
@@ -350,9 +561,8 @@ std::map<std::string, command_handler> command_handlers(){
     result["viewvariant"] = viewvariant;
     result["viewproblems"] = viewproblems;
     result["viewproblem"] = viewproblem;
+    result["viewtestgroup"] = viewtestgroup;
     return result;
 }
-
-
 
 

@@ -92,7 +92,7 @@ int ssl_socket::writefile(std::string const &filename, int max_size){
         filestream.read(c, maxlen);
         int len = filestream.gcount();
         c[len] = '\0';
-        this->write(std::string(c, len));
+        boost::asio::write(*socket, boost::asio::buffer(c, len));
 		filesize -= len;
     }
     return 0;

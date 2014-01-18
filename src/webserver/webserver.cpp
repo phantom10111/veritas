@@ -57,9 +57,11 @@ void webserver::server_thread(ssl::stream<ip::tcp::socket> *stream){
     }
     std::string command;
     socket.read(command);
-    std::cout << "ws" << std::endl;
-    if(handlers.count(command))
+    if(handlers.count(command)) try {
         handlers[command](user, socket, conn);
+    } catch(const pqxx::pqxx_exception &e){
+    	socket.write(e.base().what(), '\n');
+    }
     else
         socket.write("ERROR NOSUCHCOMMAND", '\n');
   } catch(...) {std::cout << "sigh" << std::endl;}

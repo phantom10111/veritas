@@ -95,11 +95,10 @@ void checker_server::checker_thread(){
             std::string end_status = "OK";
             for(auto testgroup : testgroups){
                 stream->write("TESTGROUP") 
-                       .write(testgroup.testgroupname, '\n'); //TODO replace ' 's in
-                                                              //testgroupname to '_'s
+                       .write(testgroup.testgroupname, '\n');
                 for(auto test : testgroup.tests){
                     stream->write("\tTEST")
-                           .write(test.testname, '\n');       //TODO same as above
+                           .write(test.testname, '\n');
                     auto result = _checker.test_solution(
                         submissionid,
                         compiled_filename,
