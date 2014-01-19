@@ -618,6 +618,151 @@ void addgrouptovariant(
     return;
 }
 
+void removeproblem(
+        pqxx::result::tuple &user, 
+        ssl_socket& socket, 
+        pqxx::connection &conn){
+    pqxx::work txn(conn);
+    conn.prepare("moderated contests", 
+        "      SELECT contestid           " 
+        "        FROM participations      "
+        "NATURAL JOIN variants            "
+        "       WHERE userid = $1 "
+        "         AND is_moderator = true ");
+    int userid = user["userid"].as<int>();
+    pqxx::result contests = txn.prepared("moderated contests")(userid).exec();
+    if(contests.empty() && !user["is_administrator"].as<bool>()){
+        socket.write("ERROR NOPERMISSION", '\n');
+        return;
+    }
+    std::string problemid;
+    socket.read(problemid);
+    std::cout << problemid << std::endl;
+    conn.prepare("delete problem", 
+        "  DELETE FROM problems      "
+        "        WHERE problemid = $1");
+    txn.prepared("delete problem")(problemid).exec();
+    socket.write("OK", '\n');
+    txn.commit();
+    return;
+}
+
+
+void removetestgroup(
+        pqxx::result::tuple &user, 
+        ssl_socket& socket, 
+        pqxx::connection &conn){
+    pqxx::work txn(conn);
+    conn.prepare("moderated contests", 
+        "      SELECT contestid           " 
+        "        FROM participations      "
+        "NATURAL JOIN variants            "
+        "       WHERE userid = $1 "
+        "         AND is_moderator = true ");
+    int userid = user["userid"].as<int>();
+    pqxx::result contests = txn.prepared("moderated contests")(userid).exec();
+    if(contests.empty() && !user["is_administrator"].as<bool>()){
+        socket.write("ERROR NOPERMISSION", '\n');
+        return;
+    }
+    std::string testgroupid;
+    socket.read(testgroupid);
+    conn.prepare("delete testgroup", 
+        "  DELETE FROM testgroups      "
+        "        WHERE testgroupid = $1");
+    txn.prepared("delete testgroup")(testgroupid).exec();
+    socket.write("OK", '\n');
+    txn.commit();
+    return;
+}
+
+void removetest(
+        pqxx::result::tuple &user, 
+        ssl_socket& socket, 
+        pqxx::connection &conn){
+    pqxx::work txn(conn);
+    conn.prepare("moderated contests", 
+        "      SELECT contestid           " 
+        "        FROM participations      "
+        "NATURAL JOIN variants            "
+        "       WHERE userid = $1 "
+        "         AND is_moderator = true ");
+    int userid = user["userid"].as<int>();
+    pqxx::result contests = txn.prepared("moderated contests")(userid).exec();
+    if(contests.empty() && !user["is_administrator"].as<bool>()){
+        socket.write("ERROR NOPERMISSION", '\n');
+        return;
+    }
+    std::string testid;
+    socket.read(testid);
+    conn.prepare("delete test", 
+        "  DELETE FROM tests      "
+        "        WHERE testid = $1");
+    txn.prepared("delete test")(testid).exec();
+    socket.write("OK", '\n');
+    txn.commit();
+    return;
+}
+
+
+void removetestfromgroup(
+        pqxx::result::tuple &user, 
+        ssl_socket& socket, 
+        pqxx::connection &conn){
+    pqxx::work txn(conn);
+    conn.prepare("moderated contests", 
+        "      SELECT contestid           " 
+        "        FROM participations      "
+        "       WHERE userid = $1         "
+        "         AND is_moderator = true ");
+    int userid = user["userid"].as<int>();
+    pqxx::result contests = txn.prepared("moderated contests")(userid).exec();
+    if(contests.empty() && !user["is_administrator"].as<bool>()){
+        socket.write("ERROR NOPERMISSION", '\n');
+        return;
+    }
+    std::string testid, testgroupid;
+    socket.read(testid).read(testgroupid);
+    conn.prepare("delete t_t", 
+        "  DELETE FROM testgroups_tests "
+        "        WHERE testgroupid = $2 AND testid = $1");
+    txn.prepared("delete t_t")(testid)(testgroupid).exec();
+    socket.write("OK", '\n');
+    txn.commit();
+    return;
+}
+
+
+
+void removegroupfromvariant(
+        pqxx::result::tuple &user, 
+        ssl_socket& socket, 
+        pqxx::connection &conn){
+    pqxx::work txn(conn);
+    std::string testgroupid, variantid;
+    socket.read(testgroupid).read(variantid);
+    conn.prepare("moderated contests", 
+        "      SELECT contestid           " 
+        "        FROM participations      "
+        "NATURAL JOIN variants            "
+        "       WHERE variantid = $1      "
+        "         AND userid = $2 "
+        "         AND is_moderator = true ");
+    int userid = user["userid"].as<int>();
+    pqxx::result contests = txn.prepared("moderated contests")(variantid)(userid).exec();
+    if(contests.empty() && !user["is_administrator"].as<bool>()){
+        socket.write("ERROR NOPERMISSION", '\n');
+        return;
+    }
+    conn.prepare("delete v_t", 
+        "  DELETE FROM variants_tests "
+        "        WHERE testgroupid = $2 AND variantid = $1");
+    txn.prepared("insert v_t")(variantid)(testgroupid).exec();
+    socket.write("OK", '\n');
+    txn.commit();
+    return;
+}
+
 std::map<std::string, command_handler> command_handlers(){
     std::map<std::string, command_handler> result;
     result["submit"] = submit;
@@ -634,10 +779,11 @@ std::map<std::string, command_handler> command_handlers(){
     result["addtesttogroup"] = addtesttogroup;
     result["addvariant"] = addvariant;
     result["addgrouptovariant"] = addgrouptovariant;
+    result["removeproblem"] = removeproblem;
+    result["removetestgroup"] = removetestgroup;
+    result["removetest"] = removetest;
+    result["removetestfromgroup"] = removetestfromgroup;
+    result["removegroupfromvariant"] = removegroupfromvariant;
     return result;
 }
-
-
-
-
 
