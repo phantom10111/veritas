@@ -553,6 +553,71 @@ void addtesttogroup(
     return;
 }
 
+
+void addvariant(
+        pqxx::result::tuple &user, 
+        ssl_socket& socket, 
+        pqxx::connection &conn){
+    pqxx::work txn(conn);
+    std::string contestid, problemid, from, to, shortname, name, description;
+    socket.read(contestid);
+    conn.prepare("moderated contests", 
+        "      SELECT contestid           " 
+        "        FROM participations      "
+        "       WHERE userid = $1         "
+        "         AND contestid = $2 "
+        "         AND is_moderator = true ");
+    int userid = user["userid"].as<int>();
+    pqxx::result contests = txn.prepared("moderated contests")(userid)(contestid).exec();
+    if(contests.empty() && !user["is_administrator"].as<bool>()){
+        socket.write("ERROR NOPERMISSION", '\n');
+        return;
+    }
+    socket.read(problemid).read(from).read(to).read(shortname).
+    	readtext(name).readtext(description);
+    conn.prepare("insert variant", 
+        "  INSERT INTO variants(contestid, problemid, submissible_from, "
+        "			   submissible_to, shortname, variantname, description) "
+        "       VALUES ($1, $2, $3, $4, $5, $6, $7)");
+    txn.prepared("insert variant")(contestid)(problemid)(from)(to)(shortname)
+    	(name)(description).exec();
+    auto id = txn.exec("SELECT currval('variants_variantid_seq') AS variantid")
+    	.begin()["variantid"].as<std::string>();
+    socket.write("VARIANTID").write(id, '\n');	
+    socket.write("OK", '\n');
+    txn.commit();
+    return;
+}
+
+void addgrouptovariant(
+        pqxx::result::tuple &user, 
+        ssl_socket& socket, 
+        pqxx::connection &conn){
+    pqxx::work txn(conn);
+    std::string testgroupid, variantid;
+    socket.read(testgroupid).read(variantid);
+    conn.prepare("moderated contests", 
+        "      SELECT contestid           " 
+        "        FROM participations      "
+        "NATURAL JOIN variants            "
+        "       WHERE variantid = $1      "
+        "         AND userid = $2 "
+        "         AND is_moderator = true ");
+    int userid = user["userid"].as<int>();
+    pqxx::result contests = txn.prepared("moderated contests")(variantid)(userid).exec();
+    if(contests.empty() && !user["is_administrator"].as<bool>()){
+        socket.write("ERROR NOPERMISSION", '\n');
+        return;
+    }
+    conn.prepare("insert v_t", 
+        "  INSERT INTO variants_testgroups "
+        "       VALUES ($1, $2)");
+    txn.prepared("insert v_t")(variantid)(testgroupid).exec();
+    socket.write("OK", '\n');
+    txn.commit();
+    return;
+}
+
 std::map<std::string, command_handler> command_handlers(){
     std::map<std::string, command_handler> result;
     result["submit"] = submit;
@@ -567,7 +632,12 @@ std::map<std::string, command_handler> command_handlers(){
     result["addtestgroup"] = addtestgroup;
     result["addtest"] = addtest;
     result["addtesttogroup"] = addtesttogroup;
+    result["addvariant"] = addvariant;
+    result["addgrouptovariant"] = addgrouptovariant;
     return result;
 }
+
+
+
 
 
