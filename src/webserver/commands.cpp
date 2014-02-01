@@ -1,10 +1,11 @@
-#include "common/config.hpp"
+	#include "common/config.hpp"
 #include "common/ssl_socket.hpp"
 #include "webserver/commands.hpp"
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/ssl.hpp>
 #include <pqxx/pqxx> 
 #include <cstdlib>
+#include <ctime>
 #include <fstream>
 #include <map>
 using namespace boost::asio;
@@ -763,27 +764,205 @@ void removegroupfromvariant(
     return;
 }
 
+
+
+void createuser(
+        pqxx::result::tuple &user, 
+        ssl_socket& socket, 
+        pqxx::connection &conn){
+    pqxx::work txn(conn);
+    conn.prepare("moderated contests", 
+        "      SELECT contestid           " 
+        "        FROM participations      "
+        "       WHERE userid = $1         "
+        "         AND is_moderator = true ");
+    int userid = user["userid"].as<int>();
+    pqxx::result contests = txn.prepared("moderated contests")(userid).exec();
+    if(contests.empty() && !user["is_administrator"].as<bool>()){
+        socket.write("ERROR NOPERMISSION", '\n');
+        return;
+    }
+    const int pass_len = 10;
+    const int sigma = 26;
+    char pass[pass_len], chars[sigma + 1];
+    srand(time(NULL));
+    std::iota(chars, chars + sigma, 'a');
+    std::generate_n(pass, pass_len, [chars](){return chars[rand() % sigma];});
+    pass[pass_len] = '\0';
+    std::cout << "pass : " << pass << std::endl;
+    std::string login, username, email;
+    socket.read(login).read(username).read(email);
+    conn.prepare("insert user",
+        "INSERT INTO users(login, username, authtoken, email)  "
+        "     VALUES ($1, $2, $3, $4)                          "
+    );
+    txn.prepared("insert user")(login)(username)(pass)(login + "@mail.com").exec();
+    socket.write("PASSWORD").write(pass, '\n').write("OK", '\n');
+    txn.commit();
+    return;
+}
+
+void addusertocontest(
+        pqxx::result::tuple &user, 
+        ssl_socket& socket, 
+        pqxx::connection &conn){
+    pqxx::work txn(conn);
+    std::string login, contestname, is_moderator;
+    socket.read(login).read(contestname).read(is_moderator);
+    conn.prepare("select contestid",
+    	"SELECT contestid        "
+    	"  FROM contests         "
+    	" WHERE contestname = $1 ");
+    auto contestids = txn.prepared("select contestid")(contestname).exec();
+    if(contestids.empty()){
+        socket.write("ERROR NOSUCHCONTEST", '\n');
+        return;
+    }
+    int contestid = contestids.begin()["contestid"].as<int>();
+    conn.prepare("participation info",
+    	"SELECT *                  " 
+    	"  FROM participations     "
+    	" WHERE userid = $1        "
+    	"   AND contestid = $2     "
+    	"   AND is_moderator = true");
+    auto infos = txn.prepared("participation info")(user["userid"].as<int>())(contestid).exec();
+    if(infos.empty() && !user["is_administrator"].as<bool>()){
+        socket.write("ERROR NOPERMISSION", '\n');
+        return;
+    }
+    conn.prepare("select userid",
+    	"SELECT userid    "
+    	"  FROM users     "
+    	" WHERE login = $1");
+    auto userids = txn.prepared("select userid")(login).exec();
+    if(userids.empty()){
+        socket.write("ERROR NOUSER", '\n');
+        return;
+    }
+    int userid = userids.begin()["userid"].as<int>();
+    conn.prepare("add participant",
+    	"INSERT INTO participations"
+    	"     VALUES ($1, $2, $3)  ");
+    txn.prepared("add participant")(userid)(contestid)(is_moderator == "true").exec();
+    socket.write("OK", '\n');
+    txn.commit();
+    return;
+}
+
+void addlanguagetovariant(
+        pqxx::result::tuple &user, 
+        ssl_socket& socket, 
+        pqxx::connection &conn){
+    pqxx::work txn(conn);
+    std::string contestname, shortname, roname, extension;
+    socket.read(contestname).read(shortname).read(roname).read(extension);
+    
+    conn.prepare("select contestid",
+    	"SELECT contestid        "
+    	"  FROM contests         "
+    	" WHERE contestname = $1 ");
+    auto contestids = txn.prepared("select contestid")(contestname).exec();
+    if(contestids.empty()){
+        socket.write("ERROR NOSUCHCONTEST", '\n');
+        return;
+    }
+    int contestid = contestids.begin()["contestid"].as<int>();
+    std::cout << 1 << std::endl;
+    conn.prepare("select variantid",
+    	"SELECT variantid        "
+    	"  FROM variants         "
+    	" WHERE contestid = $1   "
+    	"   AND shortname = $2   ");
+    auto variantids = txn.prepared("select variantid")(contestid)(shortname).exec();
+    if(variantids.empty()){
+        socket.write("ERROR NOVARIANT", '\n');
+        return;
+    }
+    int variantid = variantids.begin()["variantid"].as<int>();
+    std::cout << 1 << std::endl;
+    
+    conn.prepare("participation info",
+    	"SELECT *                  " 
+    	"  FROM participations     "
+    	" WHERE userid = $1        "
+    	"   AND contestid = $2     "
+    	"   AND is_moderator = true");
+    auto infos = txn.prepared("participation info")(user["userid"].as<int>())(contestid).exec();
+    if(infos.empty() && !user["is_administrator"].as<bool>()){
+        socket.write("ERROR NOPERMISSION", '\n');
+        return;
+    }
+    std::cout << 1 << std::endl;
+    
+    conn.prepare("select optionid",
+    	"SELECT running_optionid    "
+    	"  FROM running_options     "
+    	" WHERE running_optionname= $1");
+    auto optionids = txn.prepared("select optionid")(roname).exec();
+    if(optionids.empty()){
+        socket.write("ERROR NOOPTION", '\n');
+        return;
+    }
+    int optionid = optionids.begin()["running_optionid"].as<int>();
+    conn.prepare("add option to variant",
+    	"INSERT INTO variants_running_options"
+    	"     VALUES ($1, $2, $3)  ");
+    txn.prepared("add option to variant")(optionid)(extension)(variantid).exec();
+    socket.write("OK", '\n');
+    txn.commit();
+    return;
+}
+
+void viewlanguages(
+        pqxx::result::tuple &user, 
+        ssl_socket& socket, 
+        pqxx::connection &conn){
+    pqxx::work txn(conn);
+    conn.prepare("moderated contests", 
+        "      SELECT contestid           " 
+        "        FROM participations      "
+        "       WHERE userid = $1         "
+        "         AND is_moderator = true ");
+    int userid = user["userid"].as<int>();
+    pqxx::result contests = txn.prepared("moderated contests")(userid).exec();
+    if(contests.empty() && !user["is_administrator"].as<bool>()){
+        socket.write("ERROR NOPERMISSION", '\n');
+        return;
+    }
+    auto options = txn.exec("SELECT running_optionname FROM running_options");
+    for(auto option : options){
+    	socket.write("OPTION")
+    		.write(option["running_optionname"].as<std::string>(), '\n');
+    }
+    socket.write("OK", '\n');
+    return;
+}
+#define ADD_COMMAND(map, command) map[#command] = command
 std::map<std::string, command_handler> command_handlers(){
     std::map<std::string, command_handler> result;
-    result["submit"] = submit;
-    result["viewcontests"] = viewcontests;
-    result["viewvariants"] = viewvariants;
-    result["viewvariant"] = viewvariant;
-    result["viewproblems"] = viewproblems;
-    result["viewproblem"] = viewproblem;
-    result["viewtestgroup"] = viewtestgroup;
-    result["viewtest"] = viewtest;
-    result["addproblem"] = addproblem;
-    result["addtestgroup"] = addtestgroup;
-    result["addtest"] = addtest;
-    result["addtesttogroup"] = addtesttogroup;
-    result["addvariant"] = addvariant;
-    result["addgrouptovariant"] = addgrouptovariant;
-    result["removeproblem"] = removeproblem;
-    result["removetestgroup"] = removetestgroup;
-    result["removetest"] = removetest;
-    result["removetestfromgroup"] = removetestfromgroup;
-    result["removegroupfromvariant"] = removegroupfromvariant;
+    ADD_COMMAND(result, submit);
+    ADD_COMMAND(result, createuser);
+    ADD_COMMAND(result, viewcontests);
+    ADD_COMMAND(result, viewvariants);
+    ADD_COMMAND(result, viewvariant);
+    ADD_COMMAND(result, viewproblems);
+    ADD_COMMAND(result, viewproblem);
+    ADD_COMMAND(result, viewtestgroup);
+    ADD_COMMAND(result, viewtest);
+    ADD_COMMAND(result, addproblem);
+    ADD_COMMAND(result, addtestgroup);
+    ADD_COMMAND(result, addtest);
+    ADD_COMMAND(result, addtesttogroup);
+    ADD_COMMAND(result, addvariant);
+    ADD_COMMAND(result, addgrouptovariant);
+    ADD_COMMAND(result, removeproblem);
+    ADD_COMMAND(result, removetestgroup);
+    ADD_COMMAND(result, removetest);
+    ADD_COMMAND(result, removetestfromgroup);
+    ADD_COMMAND(result, removegroupfromvariant);
+    ADD_COMMAND(result, addusertocontest);
+    ADD_COMMAND(result, addlanguagetovariant);
+    ADD_COMMAND(result, viewlanguages);
     return result;
 }
 
