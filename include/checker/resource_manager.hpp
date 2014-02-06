@@ -7,7 +7,9 @@
 class resource_manager {
 public:
     submission_data get_submission_data(std::string submissionid);
+    void cleanup_submission_data(const submission_data &submission);
     std::vector<testgroup_data> get_tests(std::string submissionid);
+    void cleanup_tests(const std::vector<testgroup_data> &vec);
     void add_test_result(test_result result);
 private:
     void write_to_file(std::string filename, pqxx::binarystring str);
