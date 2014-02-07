@@ -6,6 +6,7 @@
 #include <iostream>
 #include <fstream>
 #include <sys/stat.h>
+#include <cstdio>
 
 submission_data resource_manager::get_submission_data(
     std::string submissionid
@@ -15,6 +16,11 @@ submission_data resource_manager::get_submission_data(
     auto submission = select_submission(conn, submissionid);
     
     if(submission.empty())
+        return submission_data(submission_data::NO_SUCH_SUBMISSION);
+    
+    auto solution = select_solution(conn, submissionid);
+    
+    if(solution.empty())
         return submission_data(submission_data::NO_SUCH_SUBMISSION);
     
     auto row = submission.begin();
@@ -45,11 +51,6 @@ submission_data resource_manager::get_submission_data(
     chmod(compile_script_filename.c_str(), S_IRWXU);
     chmod(run_script_filename.c_str(), S_IRWXU);
     
-    auto solution = select_solution(conn, submissionid);
-    
-    if(solution.empty())
-        return submission_data(submission_data::NO_SUCH_SUBMISSION);
-    
     row = solution.begin(); 
     pqxx::binarystring solution_file(row["file"]);
     std::string solution_filename = submissionid + "." + extension;
@@ -58,6 +59,13 @@ submission_data resource_manager::get_submission_data(
         
     return submission_data(submission_data::OK, testid, solution_filename, 
                 compile_script_filename, run_script_filename, variantid);
+}
+
+void resource_manager::cleanup_submission_data(const submission_data &submission)
+{
+	remove(submission.compile_script_filename.c_str());
+	remove(submission.run_script_filename.c_str());
+	remove(submission.solution_filename.c_str());
 }
 
 std::vector<testgroup_data> resource_manager::get_tests(std::string variantid){
@@ -89,6 +97,17 @@ std::vector<testgroup_data> resource_manager::get_tests(std::string variantid){
     }
     return testgroup_vector;
 }
+
+void resource_manager::cleanup_tests(const std::vector<testgroup_data> &vec)
+{
+	for(auto testgroup : vec)
+		for(auto test : testgroup.tests)
+		{
+			remove(test.infilename.c_str());
+			remove(test.outfilename.c_str());
+		}
+}
+
 void resource_manager::add_test_result(test_result result){
     pqxx::connection conn(DB_CONN_INFO);
     pqxx::work txn(conn);

@@ -86,6 +86,7 @@ void checker_server::checker_thread(){
                 compiled_filename
             );
             if(compilation_status){
+                _resource_manager.cleanup_submission_data(submission);
                 _resource_manager.add_test_result(test_result(submissionid, 
                     "CME", submission.testid));
                 stream->write("END CME", '\n');
@@ -118,6 +119,8 @@ void checker_server::checker_thread(){
                 }
             }
             outside:
+            _resource_manager.cleanup_tests(testgroups);
+            _resource_manager.cleanup_submission_data(submission);
             stream->write("END RESULT")
                    .write(end_status, '\n');
             break;
