@@ -185,7 +185,7 @@ void viewvariants(
     int userid = user["userid"].as<int>();
     pqxx::result contests = txn.prepared("user contests")(userid)
                                                     (contestname).exec();
-    if(contests.empty()){
+    if(contests.empty() ){
         socket.write("ERROR NOSUCHPARTICIPATION", '\n');
         return;
     }
@@ -1012,6 +1012,40 @@ void viewresults(
     socket.write("OK", '\n');
     return;
 }
+
+
+
+void createcontest(
+        pqxx::result::tuple &user, 
+        ssl_socket& socket, 
+        pqxx::connection &conn){
+    pqxx::work txn(conn);
+    conn.prepare("moderated contests", 
+        "      SELECT contestid           " 
+        "        FROM participations      "
+        "       WHERE userid = $1         "
+        "         AND is_moderator = true ");
+    int userid = user["userid"].as<int>();
+    pqxx::result contests = txn.prepared("moderated contests")(userid).exec();
+    if(contests.empty() && !user["is_administrator"].as<bool>()){
+        socket.write("ERROR NOPERMISSION", '\n');
+        return;
+    }
+    std::string contestname, description;
+    socket.read(contestname).readtext(description);
+    conn.prepare("insert contest", 
+        "  INSERT INTO contests(contestname, description) VALUES($1, $2)");
+    txn.prepared("insert contest")(contestname)(description).exec();
+    int contestid = txn.exec("SELECT currval('contests_contestid_seq') "
+                             "    AS contestid                         "
+                            ).begin()["contestid"].as<int>();
+    conn.prepare("insert mod", 
+        "  INSERT INTO participations VALUES($1, $2, 't')");
+    txn.prepared("insert mod")(user["userid"].as<int>())(contestid).exec();
+    
+    socket.write("OK", '\n');
+    txn.commit();
+}
 #define ADD_COMMAND(map, command) map[#command] = command
 std::map<std::string, command_handler> command_handlers(){
     std::map<std::string, command_handler> result;
@@ -1039,6 +1073,7 @@ std::map<std::string, command_handler> command_handlers(){
     ADD_COMMAND(result, addlanguagetovariant);
     ADD_COMMAND(result, viewlanguages);
     ADD_COMMAND(result, viewresults);
+    ADD_COMMAND(result, createcontest);
     return result;
 }
 
