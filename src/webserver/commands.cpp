@@ -508,7 +508,6 @@ void addtest(
     std::string problemid, testname, description, timelimit_, memlimit_, infile, 
     	outfile;
     socket.read(problemid).read(testname).readtext(description).read(timelimit_);
-    //std::cout << problemid << " " << testname << " " << description << " | " << timelimit_ << " " << std::endl;
     socket.read(memlimit_).readtext(infile).readtext(outfile);
     conn.prepare("insert test", 
         "  INSERT INTO tests(problemid, testname, description, timelimit, "
@@ -516,7 +515,6 @@ void addtest(
         "       VALUES ($1, $2, $3, $4, $5, $6, $7)");
     float timelimit = atof(timelimit_.c_str());
     int memlimit = atoi(memlimit_.c_str());
-    //std::cout << timelimit << " " << memlimit << std::endl;
     txn.prepared("insert test")(problemid)(testname)(description)
     	(timelimit)(memlimit)(infile)(outfile).exec();
     pqxx::result testids = 
@@ -638,7 +636,6 @@ void removeproblem(
     }
     std::string problemid;
     socket.read(problemid);
-    std::cout << problemid << std::endl;
     conn.prepare("delete problem", 
         "  DELETE FROM problems      "
         "        WHERE problemid = $1");
@@ -789,7 +786,6 @@ void createuser(
     std::iota(chars, chars + sigma, 'a');
     std::generate_n(pass, pass_len, [chars](){return chars[rand() % sigma];});
     pass[pass_len] = '\0';
-    std::cout << "pass : " << pass << std::endl;
     std::string login, username, email;
     socket.read(login).read(username).read(email);
     conn.prepare("insert user",
@@ -867,7 +863,6 @@ void addlanguagetovariant(
         return;
     }
     int contestid = contestids.begin()["contestid"].as<int>();
-    std::cout << 1 << std::endl;
     conn.prepare("select variantid",
     	"SELECT variantid        "
     	"  FROM variants         "
@@ -879,7 +874,6 @@ void addlanguagetovariant(
         return;
     }
     int variantid = variantids.begin()["variantid"].as<int>();
-    std::cout << 1 << std::endl;
     
     conn.prepare("participation info",
     	"SELECT *                  " 
@@ -892,7 +886,6 @@ void addlanguagetovariant(
         socket.write("ERROR NOPERMISSION", '\n');
         return;
     }
-    std::cout << 1 << std::endl;
     
     conn.prepare("select optionid",
     	"SELECT running_optionid    "
@@ -937,6 +930,88 @@ void viewlanguages(
     socket.write("OK", '\n');
     return;
 }
+void viewresults(
+        pqxx::result::tuple &user, 
+        ssl_socket& socket, 
+        pqxx::connection &conn){
+    pqxx::work txn(conn);
+    std::string contestname, shortname;
+    socket.read(contestname).read(shortname);
+    conn.prepare("variantid is_moderator", 
+        "      SELECT variantid, is_moderator   " 
+        "        FROM participations p          "
+        "NATURAL JOIN contests c                "
+        "        JOIN variants v                "
+        "          ON c.contestid = v.contestid "
+        "       WHERE userid = $1               "
+        "         AND c.contestname = $2        "
+        "         AND v.shortname = $3          ");
+    int userid = user["userid"].as<int>();
+    pqxx::result vis = txn.prepared("variantid is_moderator")(user["userid"].as<int>())(contestname)(shortname).exec();
+    if(vis.empty() && !user["is_administrator"].as<bool>()){
+        socket.write("ERROR NOPERMISSION", '\n');
+        return;
+    }
+    bool is_moderator = vis.begin()["is_moderator"].as<bool>() || user["is_administrator"].as<bool>();
+    int variantid = vis.begin()["variantid"].as<int>();
+    pqxx::result results;
+    conn.prepare("n tests",
+        "SELECT COUNT(*) AS n_tests    "
+        "FROM variants_testgroups      "
+        "NATURAL JOIN testgroups_tests "
+        "WHERE variantid = $1          "
+    );
+    int n_tests = txn.prepared("n tests")(variantid).exec().begin()["n_tests"].as<int>();
+    if(is_moderator){
+        conn.prepare("results", 
+        "SELECT submissionid, username, status "
+        "FROM results                          "
+        "NATURAL JOIN submissions              "
+        "NATURAL JOIN statuses                 "
+        "NATURAL JOIN users                    "
+        "WHERE variantid = $1                  "
+        "ORDER BY submissionid DESC            ");
+        results = txn.prepared("results")(variantid).exec();
+    } else {
+        conn.prepare("results", 
+        "SELECT submissionid, username, status "
+        "FROM results                          "
+        "NATURAL JOIN submissions              "
+        "NATURAL JOIN statuses                 "
+        "NATURAL JOIN users                    "
+        "WHERE variantid = $1                  "
+        "AND userid = $2                       "
+        "ORDER BY submissionid DESC            ");
+        results = txn.prepared("results")(variantid)(user["userid"].as<int>()).exec();
+    }
+    int submissionid = -1, counter = 0;
+    std::string username = "", status = "";
+    socket.write("submit#", '\t').write("user", '\t').write("\tstatus", '\n');
+    for(auto result : results){
+    	int submissionid2 = result["submissionid"].as<int>();
+    	if(submissionid != submissionid2){
+    	    if(counter < n_tests)
+    	        status = "QUE";
+    	    if(submissionid != -1){
+    	        socket.write(std::to_string(submissionid), '\t').write(username, '\t').write(status, '\n');
+    	    }
+    	    counter = 0;
+    	    status = "OK";
+    	    username = result["username"].as<std::string>();
+    	}
+    	submissionid = submissionid2;
+    	if(result["status"].as<std::string>() != "OK")
+    	    status = result["status"].as<std::string>();
+    	counter++;
+    }
+    	    if(counter < n_tests)
+    	        status = "QUE";
+    	    if(submissionid != -1){
+    	        socket.write(std::to_string(submissionid), '\t').write(username, '\t').write(status, '\n');
+    	    }
+    socket.write("OK", '\n');
+    return;
+}
 #define ADD_COMMAND(map, command) map[#command] = command
 std::map<std::string, command_handler> command_handlers(){
     std::map<std::string, command_handler> result;
@@ -963,6 +1038,7 @@ std::map<std::string, command_handler> command_handlers(){
     ADD_COMMAND(result, addusertocontest);
     ADD_COMMAND(result, addlanguagetovariant);
     ADD_COMMAND(result, viewlanguages);
+    ADD_COMMAND(result, viewresults);
     return result;
 }
 
