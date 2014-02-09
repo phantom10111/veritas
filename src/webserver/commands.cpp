@@ -84,11 +84,7 @@ void submit(pqxx::result::tuple &user,
     
     for(int checker = 0; checker < n_checkers; checker++){
       try {
-	std::string host = checker_hosts[checker];
-	ip::tcp::resolver resolv(ios);
-	auto it = resolv.resolve(host);
-        ip::tcp::endpoint endpoint = *it;
-	endpoint.port(checker_ports[checker]);
+		ip::tcp::endpoint endpoint(ip::tcp::v4(), checker_ports[checker]);
         ssl::context ctx(ssl::context::tlsv1_client);
         ctx.set_options(ssl::context::default_workarounds | ssl::context::no_sslv2);
         ctx.set_verify_mode(ssl::verify_peer);
@@ -115,11 +111,7 @@ void submit(pqxx::result::tuple &user,
         return;
     }
   try {
-    std::string host = checker_hosts[minqchecker];
-    ip::tcp::resolver resolv(ios);
-    auto it = resolv.resolve(host);
-    ip::tcp::endpoint endpoint = *it;
-    endpoint.port(checker_ports[minqchecker]);
+		ip::tcp::endpoint endpoint(ip::tcp::v4(), checker_ports[minqchecker]);
     ssl::context ctx(ssl::context::tlsv1_client);
     ctx.set_options(ssl::context::default_workarounds | ssl::context::no_sslv2);
     ctx.set_verify_mode(ssl::verify_peer);
