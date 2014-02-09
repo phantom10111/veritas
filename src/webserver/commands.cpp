@@ -64,6 +64,8 @@ void submit(pqxx::result::tuple &user,
         filestream.read(submit_bytes + bytes_read, filesize - bytes_read);
         bytes_read += filestream.gcount();
     }
+    filestream.close();
+    unlink(filename.c_str());
     pqxx::binarystring submit_binary((const void*) submit_bytes, (size_t)filesize);
     conn.prepare("submit", 
         "INSERT INTO submissions(userid, variantid, extension, file) " 
